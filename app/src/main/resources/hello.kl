@@ -1,0 +1,17 @@
+
+import "stdlib";
+
+
+func main(string argstrs) : int32{
+    // here is a single line comment
+    /* here is a
+       multi line comment **/
+    print("out", "Hello kenlang!");
+    print("err", "Hello kenlang!");
+    return 0;
+}
+
+
+
+
+

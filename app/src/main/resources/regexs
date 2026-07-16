@@ -21,7 +21,7 @@ ACCESSOR: .
 OPEN_PAREN: (
 CLOSE_PAREN: )
 OPEN_SQUARE: [
-CLOSE_PAREN: ]
+CLOSE_SQUARE: ]
 
 // ops
 
@@ -45,6 +45,6 @@ XOR: xor
 
 ID: [a-z_]([a-z0-9_])*
 STRING_LIT: "[ASCII32-ASCII126]*"
-NUM: [0-9]+
+NUM: [0-9]+ | -[0-9]+
 WHITESPACE: //[^\n]*\n | /*.**/ | [ \n\t]*
 

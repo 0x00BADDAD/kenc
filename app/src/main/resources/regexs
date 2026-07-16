@@ -1,0 +1,50 @@
+// reserved words
+IF: if
+ELSE: else
+WHILE: while
+ELIF: elif
+FOR: for
+VAR: var
+TYPE: type
+BREAK: break
+OF: of
+ARRAY: array
+RETURN: return
+FUNC: func
+
+// punctuations
+OPEN_BRACE: {
+CLOSE_BRACE: }
+COLON: :
+SEMI_COLON: ;
+ACCESSOR: .
+OPEN_PAREN: (
+CLOSE_PAREN: )
+OPEN_SQUARE: [
+CLOSE_PAREN: ]
+
+// ops
+
+//ARITH
+ASSIGN: =
+PLUS: +
+MINUS: -
+DIV: /
+MUL: *
+MOD: %
+
+//LOGICAL
+ISEQUAL: ==
+GREATER_THAN: >
+LESS_THAN: <
+NOT_EQUAL: !=
+NEGATION: !
+AND: and
+OR: or
+XOR: xor
+
+ID: [a-z_]([a-z0-9_])*
+STRING_LIT: "[ASCII32-ASCII126]*"
+NUM: [0-9]+
+WHITESPACE: //[^\n]*\n | /*.**/ | [ \n\t]*
+

@@ -3,34 +3,47 @@ package org.kenlang.lexer;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.kenlang.lexer.Pair;
 
 public class AutoState{
     // keys are all the alphabets of the language incl. epsilon
-    private final Map<String, boolean> in = new HashMap<>();
-    private final Map<String, boolean> out = new HashMap<>();
+    private final Map<String, AutoState> in = new HashMap<>();
+    private final Map<String, AutoState> out = new HashMap<>();
 
     private String name;
 
-    public AutoState(String name, List<String> ins, List<String> outs){
+    public AutoState(String name, List<Pair<String, AutoState>> ins, List<Pair<String, AutoState>> outs){
         this.name = name;
-        for(String s:ins){
-            this.addIn(s);
+        for(Pair<String, AutoState> s:ins){
+            this.addIn(s.first(), s.second());
         }
-        for(String s:outs){
-            this.addOut(s);
+        for(Pair<String, AutoState> s:outs){
+            this.addOut(s.first(), s.second());
         }
+    }
+
+    public AutoState getIn(){
+        rerurn this.in;
+    }
+
+    public AutoState getOut(){
+        rerurn this.out;
     }
 
     public void setName(String name){
         this.name = name;
     }
 
-    public void addIn(String alphabet){
-        this.in.put(alphabet, true);
+    public String getName(){
+        return this.name;
     }
 
-    public void addOut(String alphabet){
-        this.out.put(alphabet, true);
+    public void addIn(String alphabet, AutoState state){
+        this.in.put(alphabet, state);
+    }
+
+    public void addOut(String alphabet, AutoState state){
+        this.out.put(alphabet, state);
     }
 
 }

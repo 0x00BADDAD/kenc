@@ -34,7 +34,7 @@ public class Nfa{
 
         switch(op){
             case "and":
-
+                
                 break;
         
         

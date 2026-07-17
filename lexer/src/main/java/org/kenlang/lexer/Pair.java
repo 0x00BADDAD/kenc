@@ -1,4 +1,3 @@
 package org.kenlang.lexer;
 
-public record Pair<T, U>(T first, U second) {}
-
+public record Pair<K, V>(K first, V second) {}

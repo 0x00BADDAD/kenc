@@ -8,6 +8,7 @@ import java.util.HashSet;
 import org.kenlang.lexer.Pair;
 
 
+import org.kenlang.lexer.Pair;
 
 public class AutoState{
     // keys are all the alphabets of the language incl. epsilon
@@ -16,29 +17,46 @@ public class AutoState{
 
     private String name;
 
-    public AutoState(String name, List<Pair<AutoState, String>> ins, List<Pair<AutoState, String>> outs){
+    public AutoState(String name, List<Pair<String, AutoState>> ins, List<Pair<String, AutoState>> outs){
         this.name = name;
-        for(Pair<AutoState, String> s:ins){
-            this.addIn(s.second(), s.first());
+        for(Pair<String, AutoState> s:ins){
+            this.addIn(s.first(), s.second());
         }
-        for(Pair<AutoState, String> s:outs){
-            this.addOut(s.second(), s.first());
+        for(Pair<String, AutoState> s:outs){
+            this.addOut(s.first(), s.second());
         }
     }
+
+    public AutoState getIn(){
+        rerurn this.in;
+    }
+
+    public AutoState getOut(){
+        rerurn this.out;
+    }
+
 
     public void setName(String name){
         this.name = name;
     }
 
+    public String getName(){
+        return this.name;
+    }
+
     public void addIn(String alphabet, AutoState node){
-        Set<AutoState> currSet = in.get(alphabet);
-        currSet.add(node);
+        Set<AutoState> currSet = in.getOrDefault(alphabet, new HashSet<>());
+        if(node != null){
+            currSet.add(node);
+        }
         this.in.put(alphabet, currSet);
     }
 
     public void addOut(String alphabet, AutoState node){
-        Set<AutoState> currSet = out.get(alphabet);
-        currSet.add(node);
+        Set<AutoState> currSet = out.getOrDefault(alphabet, new HashSet<>());
+        if(node != null){
+            currSet.add(node);
+        }
         this.out.put(alphabet, currSet);
     }
 

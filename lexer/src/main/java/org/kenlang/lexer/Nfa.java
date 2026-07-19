@@ -8,12 +8,15 @@ import org.kenlang.lexer.AutoState;
 
 public class Nfa{
 
-    private Set<AutoState> nfaStates;
-    private AutoState head; // head autostate won't have any outgoing egde logically
+    private Set<AutoState> nfaStates = new HashSet<>();
+    private AutoState head; // head can have edges going out of it
     private AutoState tail; // tail autostate would in general just have a single incoming edge
     private String namingPrefix;
     private int currIdx;
     private String tailAlphabet;
+
+    private String token; // these will only be set when markFinal method is called on the nfa object
+    private AutoState finalState;
 
     public String getTailAlphabet(){
         return this.tailAlphabet;
@@ -47,9 +50,21 @@ public class Nfa{
         return this.namingPrefix;
     }
 
-    public Nfa(String prefix){
+    public void setNamingPrefix(String name){
+        this.namingPrefix = name;
+    }
+
+    public AutoState getFinalState(){
+        return this.finalState;
+    }
+
+    public AutoState setFinalState(AutoState state){
+        this.finalState = state;
+    }
+
+    public Nfa(String prefix, int currIdx){
         this.namingPrefix = prefix;
-        this.currIdx = 0;
+        this.currIdx = currIdx;
     }
 
 
@@ -117,25 +132,81 @@ public class Nfa{
                 if(otherNfa != null){
                     throw new IllegalArgumentException("otherNfa has to be null with star op.");
                 }
-                Nfa newNfa = 
-                this.head.addOut(this.tailAlphabet, this.tail);
-                this.tail.addIn(this.tailAlphabet, this.head);
+                Nfa newNfa =  this.copy();
+                newNfa.getHead().addOut(newNfa.getTailAlphabet(), newNfa.geTail());
+                newNfa.getTail().addIn(newNfa.getTailAlphabet(), newNfa.getHead());
 
-                this.head.addIn("epsilon", null);
-                this.tailAlphabet = "epsilon";
-                this.tail = this.head;
-                break;
+                newNfa.getHead().addIn("epsilon", null);
+                newNfa.setTailAlphabet("epsilon");
+                newNfa.setTail(newNfa.getHead());
+                return newNfa;
             case "plus":
                 if(otherNfa != null){
                     throw new IllegalArgumentException("otherNfa has to be null with plus op.");
                 }
-                Nfa plusNfa = this.transform(this.transform(null, "star"), "and");
+                Nfa newNfa = this.copy();
+                Nfa plusNfa = newNfa.transform(newNfa.transform(null, "star"), "and");
                 return plusNfa;
             default:
                 throw new IllegalArgumentException("Unknown operator: " + op);
         }
     }
 
+    public Nfa copy(){
+        // copy all the states with empty in and out maps
+        // extract the edge info from this nfa
+        // fill the in and out maps of the newly copied states with this info
+        Map<Pair<String, String>, String> edgeInfo = new HashMap<>();
+        Map<String, AutoState> nameToAutoState = new HashMap<>();
+
+        Nfa newNfa = new Nfa(this.namingPrefix, this.currIdx);
+        newNfa.setTailAlphabet(this.tailAlphabet);
+        for(AutoState state: this.nfaStates){
+            AutoState newState = new AutoState(state.name, new ArrayList<>(), new ArrayList<>());
+            nameToAutoState.put(state.name, newState);
+            for(Map.Entry<String, Set<AutoState>> entry: state.getIn().entrySet()){
+                if(entry.getValue().isEmpty()){
+                    edgeInfo.put(new Pair<>("dummy", state.name), entry.getKey());
+                    continue;
+                }
+                for(AutoState outState: entry.getValue()){
+                    String alphabetConn = edgeInfo.getOrDefault(new Pair<>(outState.name, state.name), "null");
+                    if(!alphabetConn.equals(entry.getKey())){
+                        edgeInfo.put(new Pair<>(outState.name, state.name), entry.getKey());
+                    }
+                }
+            }
+
+            for(Map.Entry<String, Set<AutoState>> entry: state.getOut().entrySet()){
+                for(AutoState inState: entry.getValue()){
+                    String alphabetConn = edgeInfo.getOrDefault(new Pair<>(state.name, inState.name), "null");
+                    if(!alphabetConn.equals(entry.getKey())){
+                        edgeInfo.put(new Pair<>(state.name, inState.name), entry.getKey());
+                    }
+                }
+            }
+        }
+
+        for(Map.Entry<Pair<String, String>, String> entry: edgeInfo.entrySet()){
+            Pair<String, String> k = entry.getKey();
+            if(k.first() != "dummy"){
+                nameToAutoState.get(k.first()).addOut(entry.getValue(), nameToAutoState.get(k.second()));
+                nameToAutoState.get(k.second()).addIn(entry.getValue(), nameToAutoState.get(k.first()));
+            }else{
+                nameToAutoState.get(k.second()).addIn(entry.getValue(), null);
+            }
+        }
+        for(Map.Entry<String, AutoState> entry: nameToAutoState.entrySet()){
+            newNfa.addState(entry.getValue(), this.head.equals(entry.getValue()), this.tail.equals(entry.getValue()));
+        }
+        return newNfa;
+    }
+    
+    public void markFinal(String token, int pri){
+        this.token = token;
+        this.finalState = this.head;
+        this.head.markFinal(token, pri);
+    }
 
 
 }

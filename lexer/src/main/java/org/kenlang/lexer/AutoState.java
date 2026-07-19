@@ -15,7 +15,11 @@ public class AutoState{
     private final Map<String, Set<AutoState>> in = new HashMap<>();
     private final Map<String, Set<AutoState>> out = new HashMap<>();
 
-    private String name;
+    private String name; // this name will be unique
+
+    private String token;
+    private boolean isFinal = false;
+    private int tokenPri;
 
     public AutoState(String name, List<Pair<String, AutoState>> ins, List<Pair<String, AutoState>> outs){
         this.name = name;
@@ -45,7 +49,7 @@ public class AutoState{
     }
 
     public void addIn(String alphabet, AutoState node){
-        Set<AutoState> currSet = in.getOrDefault(alphabet, new HashSet<>());
+        Set<AutoState> currSet = this.in.getOrDefault(alphabet, new HashSet<>());
         if(node != null){
             currSet.add(node);
         }
@@ -53,11 +57,34 @@ public class AutoState{
     }
 
     public void addOut(String alphabet, AutoState node){
-        Set<AutoState> currSet = out.getOrDefault(alphabet, new HashSet<>());
+        Set<AutoState> currSet = this.out.getOrDefault(alphabet, new HashSet<>());
         if(node != null){
             currSet.add(node);
         }
         this.out.put(alphabet, currSet);
     }
+
+    public void markFinal(String token, int pri){
+        this.token = token;
+        this.isFinal = true;
+        this.tokenPri = pri;
+    }
+
+    public int getPri(){
+        return this.tokenPri;
+    }
+
+    public void setPri(int pri){
+        this.tokenPri = pri;
+    }
+
+    public boolean getIsFinal(){
+        return this.isFinal;
+    }
+
+    public String getToken(){
+        return this.token;
+    }
+
 
 }

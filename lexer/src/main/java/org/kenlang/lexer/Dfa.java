@@ -13,17 +13,27 @@ public class Dfa{
 
     private Map<int, String> finalSet = new HashMap<>();
 
-    private AutoState start;
+    private int start;
 
     private Map<Pair<int, String>, int> transTable = new HashMap<>();
 
     public Dfa(){
-    
-    
+    }
+
+    public void setDfaStates(Map<int, AutoState> dfaStates){
+        this.dfaStates = dfaStates;
+    }
+
+    public Map<int, AutoState> getDfaStates(){
+        return this.dfaStates;
     }
 
     public void setFinalSet(int state, String token){
         this.finalSet.put(state, token);
+    }
+
+    public void setFinalSetComp(Map<int, String> fS){
+        this.finalSet = fs;
     }
 
     public void setDfaEdge(int src, int tar, String alphabet){
@@ -51,7 +61,7 @@ public class Dfa{
                 // at least one final Nfa state found
                 finalSet.put(state, currTok);
             }
-            this.maxNumStates = Math.max(this.maxNumStates, state);
+            this.maxNumStates = Math.max(this.maxNumStates, state+1);
         }
         this.states.put(state, states);
         this.statesSet.put(states, state);
@@ -69,38 +79,114 @@ public class Dfa{
         return this.statesSet.containsKey(states);
     }
 
-    public void setStart(AutoState start){
+    public void setStart(int start){
         this.start = start;
     }
 
-    public AutoState getStart(){
+    public int getStart(){
         return this.start;
+    }
+
+    public void setTransTable(Map<Pair<int, String>, int> tt){
+        this.transTable = tt;
+    }
+
+    public void setMaxNumStates(int x){
+        this.maxNumStates = x;
     }
 
     public Dfa minDfa(){
         // initially non-final states and final states are in 2 different partitions.
         List<Partition> partitions = new ArrayList<>();
-        Partition finalParts = new Partition();
+        Map<String, Pair<int, Partition>> finalParts = new HashMap<>();
         Partition nonFinalParts = new Partition();
         Map<int, int> nodeToPart = new HashMap<>();
 
-        for(int i=0; i <= this.maxNumStates; ++i){
+        Set<Partition> parts = new HashSet<>(Set.of(nonFinalParts));
+
+        int currFinIdx = 1;
+        for(int i=0; i < this.maxNumStates; ++i){
             if(!finalSet.containsKey(i)){
                 nonFinalParts.addNode(i);
-                nodeToPart.put(i, 1);
-            }else{
-                finalParts.addNode(i);
                 nodeToPart.put(i, 0);
+            }else{
+                String tok = finalSet.get(i);
+
+                if(!finalParts.conatinsKey(tok)){
+                    // new tok partition
+                    finalParts.put(tok, new Pair<>(currFinIdx, new Partition(List.of(i))));
+                    nodeToPart.put(i, currFinIdx);
+                    currFinIdx+=1;
+                    continue;
+                }
+
+                finalParts.get(tok).second().addNode(i);
+                nodeToPart.put(i, finalParts.get(tok).first());
             }
         }
-        Set<Partition> parts = new HashSet<>(List.of(finalParts, nonFinalParts));
+
         Pair<Set<Partition>, Map<int, int>> currParts;
         while(true){
             currParts = this.pokeParts(parts.stream().toList(), nodeToPart);
-            if(currParts.first().equals(parts)){break;}
+            Set<Partition> partSet = new HashSet<>(currParts.first());
+            if(partSet.equals(parts)){break;}
             nodeToPart = currParts.second();
-            parts = currParts.first();
+            parts = partSet;
         }
+
+        Dfa miniDfa = this.consMinDfa(parts, nodeToPart);
+        return miniDfa;
+    }
+
+    public Dfa consMinDfa(List<Partition> parts, Map<int, int> nodeToPart){
+        Dfa finalMinDfa = new Dfa();
+
+        Map<int, String> newFinalSet = new HashSet<>();
+        Map<int, AutoState> _dfaStates = new HashMap<>();
+        Map<Pair<int, String>, int> newTransTable  = new HashMap<>();
+        finalMinDfa.setMaxNumStates(parts.size());
+        int i = 0;
+
+        for(Parititon part: parts){
+            AutoState state = new AutoState("finalDfa_" + String.valueOf(i), new ArrayList<>(), new ArrayList<>());
+            int node = part.pickOne();
+            int partNode = nodeToPart.get(node);
+            _dfaStates.put(partNode, state);
+        }
+
+        for(Partition part: parts){
+            for(int p: part){
+                if(finalSet.containsKey(p) && !newFinalSet.containsKey(nodeToPart.get(p))){
+                    newFinalSet.put(nodeToPart.get(p), finalSet.get(p));
+                    Set<AutoState> statesInPart = this.states.get(p);
+                    for(AutoState s: statesInPart){
+                        if(s.getIsFinal()){
+                            _dfaStates.get(nodeToPart.get(p)).markFinal(finalSet.get(p), s.getPri());
+                        }
+                    }
+                }
+                if(p == 0){
+                    // this partition contains the start state  hence it is  a start state in the minDfa
+                    finalMinDfa.setStart(nodeToPart.get(0));
+                }
+                Alphabets alp = new Alphabets();
+                for(int a =32; a<127; ++a){
+                    String transAlp = alp.getAlphabet(a);
+                    int tarOldNode = this.transTable.getOrDefault(new Pair<>(p, transAlp), -1);
+                    if(tarOldNode != -1 && !newTransTable.containsKey(new Pair<>(nodeToPart.get(p), transAlp))){
+                        newTransTable.put(new Pair<>(nodeToPart.get(p), transAlp), nodeToPart.get(tarOldNode));
+                        _dfaStates.get(nodeToPart.get(p)).addOut(transAlp, _dfaStates.get(nodeToPart.get(tarOldNode)));
+                        _dfaStates.get(nodeToPart.get(tarOldNode)).addIn(transAlp, _dfaStates.get(nodeToPart.get(p)));
+                    }
+
+                }
+            }
+            i+=1;
+        }
+        finalMinDfa.setDfaStates(_dfaStates);
+        finalMinDfa.setFinalSet(newFinalSet);
+        finalMinDfa.setTransTable(newTransTable);
+        return finalMinDfa;
     }
 
     public Pair<List<Partition>, Map<int, int>> pokeParts(List<Partition> parts, Map<int, int> nodeToPart){
@@ -129,7 +215,7 @@ public class Dfa{
             Partition cpar = new Partition();
             cpar.addNode(partMap.get(0).first());
             for(int j=1; j<partMap.size(); j++){
-                if(partMap.get(j).second() == part.get(j-1).second()){
+                if(partMap.get(j).second() == partMap.get(j-1).second()){
                     cpar.addNode(partMap.get(j).first());
                 }else{
                     int currPartIdx = newParts.size();

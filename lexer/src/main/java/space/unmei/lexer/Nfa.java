@@ -1,8 +1,11 @@
-package org.kenlang.lexer;
+package space.unmei.lexer;
 
-
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
-import org.kenlang.lexer.AutoState;
+
 
 
 
@@ -58,7 +61,7 @@ public class Nfa{
         return this.finalState;
     }
 
-    public AutoState setFinalState(AutoState state){
+    public void setFinalState(AutoState state){
         this.finalState = state;
     }
 
@@ -67,9 +70,22 @@ public class Nfa{
         this.currIdx = currIdx;
     }
 
+    public Nfa(String prefix, int currIdx, String tailAlpha){
+        this.namingPrefix = prefix;
+        this.currIdx = currIdx;
+        this.makeNfa(tailAlpha);
+    }
+
+    public void makeNfa(String tailAlpha){
+        AutoState s1_ = new AutoState("", new ArrayList<>(), new ArrayList<>());
+        s1_.addIn(tailAlpha, null);
+        this.setTailAlphabet(tailAlpha);
+        this.addState(s1_, true, true);
+    }
+
 
     public void addState(AutoState state, boolean isHead, boolean isTail){
-        state.setName(namnPrefix + "_" + String.valueOf(currIdx));
+        state.setName(this.namingPrefix + "_" + String.valueOf(currIdx));
         currIdx += 1;
         this.nfaStates.add(state);
         if(isHead){this.head = state;}
@@ -80,21 +96,21 @@ public class Nfa{
     public Nfa transform(Nfa otherNfa, String op){
         // combine this Nfa and its states with another Nfa and return a new Nfa
         switch(op){
-            case "and":
+            case "and":{
                 // head of this nfa gets connected to tail of other Nfa
                 AutoState otherTail = otherNfa.getTail();
                 otherTail.addIn(otherNfa.getTailAlphabet(), this.head);
                 this.head.addOut(otherNfa.getTailAlphabet(), otherTail);
 
-                otherNfaStates = otherNfa.getNfaStates();
+                Set<AutoState> otherNfaStates = otherNfa.getNfaStates();
                 for(AutoState state: this.nfaStates){
                     otherNfaStates.add(state);
                 }
                 otherNfa.setTail(this.tail);
-                otherNfa.setTailAplhabet(this.tailAlphabet);
+                otherNfa.setTailAlphabet(this.tailAlphabet);
                 return otherNfa;
-
-            case "or":
+            }
+            case "or":{
                 AutoState extra1 = new AutoState(this.namingPrefix + "_" + String.valueOf(this.currIdx), new ArrayList<>(), new ArrayList<>());
                 this.currIdx+=1;
                 AutoState extra2 = new AutoState(this.namingPrefix + "_" + String.valueOf(this.currIdx), new ArrayList<>(), new ArrayList<>());
@@ -126,27 +142,31 @@ public class Nfa{
                 for(AutoState s: this.nfaStates){
                     otherNfa.getNfaStates().add(s);
                 }
+                otherNfa.getNfaStates().add(extra1);
+                otherNfa.getNfaStates().add(extra2);
                 return otherNfa;
-
-            case "star":
+            }
+            case "star":{
                 if(otherNfa != null){
                     throw new IllegalArgumentException("otherNfa has to be null with star op.");
                 }
                 Nfa newNfa =  this.copy();
-                newNfa.getHead().addOut(newNfa.getTailAlphabet(), newNfa.geTail());
+                newNfa.getHead().addOut(newNfa.getTailAlphabet(), newNfa.getTail());
                 newNfa.getTail().addIn(newNfa.getTailAlphabet(), newNfa.getHead());
 
                 newNfa.getHead().addIn("epsilon", null);
                 newNfa.setTailAlphabet("epsilon");
                 newNfa.setTail(newNfa.getHead());
                 return newNfa;
-            case "plus":
+            }
+            case "plus":{
                 if(otherNfa != null){
                     throw new IllegalArgumentException("otherNfa has to be null with plus op.");
                 }
                 Nfa newNfa = this.copy();
                 Nfa plusNfa = newNfa.transform(newNfa.transform(null, "star"), "and");
                 return plusNfa;
+            }
             default:
                 throw new IllegalArgumentException("Unknown operator: " + op);
         }
@@ -156,52 +176,49 @@ public class Nfa{
         // copy all the states with empty in and out maps
         // extract the edge info from this nfa
         // fill the in and out maps of the newly copied states with this info
-        Map<Pair<String, String>, String> edgeInfo = new HashMap<>();
+        Map<Pair<String, String>, Set<String>> edgeInfo = new HashMap<>();
+
         Map<String, AutoState> nameToAutoState = new HashMap<>();
 
         Nfa newNfa = new Nfa(this.namingPrefix, this.currIdx);
         newNfa.setTailAlphabet(this.tailAlphabet);
         for(AutoState state: this.nfaStates){
-            AutoState newState = new AutoState(state.name, new ArrayList<>(), new ArrayList<>());
-            nameToAutoState.put(state.name, newState);
+            AutoState newState = new AutoState(state.getName(), new ArrayList<>(), new ArrayList<>());
+            nameToAutoState.put(state.getName(), newState);
             for(Map.Entry<String, Set<AutoState>> entry: state.getIn().entrySet()){
                 if(entry.getValue().isEmpty()){
-                    edgeInfo.put(new Pair<>("dummy", state.name), entry.getKey());
+                    edgeInfo.computeIfAbsent(new Pair<>("dummy", state.getName()), k -> new HashSet<>()).add(entry.getKey());
                     continue;
                 }
                 for(AutoState outState: entry.getValue()){
-                    String alphabetConn = edgeInfo.getOrDefault(new Pair<>(outState.name, state.name), "null");
-                    if(!alphabetConn.equals(entry.getKey())){
-                        edgeInfo.put(new Pair<>(outState.name, state.name), entry.getKey());
-                    }
+                    edgeInfo.computeIfAbsent(new Pair<>(outState.getName(), state.getName()), k -> new HashSet<>()).add(entry.getKey());
                 }
             }
 
             for(Map.Entry<String, Set<AutoState>> entry: state.getOut().entrySet()){
                 for(AutoState inState: entry.getValue()){
-                    String alphabetConn = edgeInfo.getOrDefault(new Pair<>(state.name, inState.name), "null");
-                    if(!alphabetConn.equals(entry.getKey())){
-                        edgeInfo.put(new Pair<>(state.name, inState.name), entry.getKey());
-                    }
+                    edgeInfo.computeIfAbsent(new Pair<>(state.getName(), inState.getName()), k -> new HashSet<>()).add(entry.getKey());
                 }
             }
         }
 
-        for(Map.Entry<Pair<String, String>, String> entry: edgeInfo.entrySet()){
+        for(Map.Entry<Pair<String, String>, Set<String>> entry: edgeInfo.entrySet()){
             Pair<String, String> k = entry.getKey();
-            if(k.first() != "dummy"){
-                nameToAutoState.get(k.first()).addOut(entry.getValue(), nameToAutoState.get(k.second()));
-                nameToAutoState.get(k.second()).addIn(entry.getValue(), nameToAutoState.get(k.first()));
-            }else{
-                nameToAutoState.get(k.second()).addIn(entry.getValue(), null);
+            for(String alpha : entry.getValue()){
+                if(!k.first().equals("dummy")){
+                    nameToAutoState.get(k.first()).addOut(alpha, nameToAutoState.get(k.second()));
+                    nameToAutoState.get(k.second()).addIn(alpha, nameToAutoState.get(k.first()));
+                }else{
+                    nameToAutoState.get(k.second()).addIn(alpha, null);
+                }
             }
         }
         for(Map.Entry<String, AutoState> entry: nameToAutoState.entrySet()){
-            newNfa.addState(entry.getValue(), this.head.equals(entry.getValue()), this.tail.equals(entry.getValue()));
+            newNfa.addState(entry.getValue(), this.head.getName().equals(entry.getKey()), this.tail.getName().equals(entry.getKey()));
         }
         return newNfa;
     }
-    
+
     public void markFinal(String token, int pri){
         this.token = token;
         this.finalState = this.head;

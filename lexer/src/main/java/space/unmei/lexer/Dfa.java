@@ -1,30 +1,38 @@
-package org.kenlang.lexer;
+package space.unmei.lexer;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 public class Dfa{
     // names of states is going to be numbers 0 1 2 3...
-    private Map<int, AutoState> dfaStates = new HashMap<>();
+    private Map<Integer, AutoState> dfaStates = new HashMap<>();
 
     private int maxNumStates = 0;
 
-    private Map<int, Set<AutoState>> states = new HashSet<>();
-    private Map<Set<AutoState>, int> statesSet = new HashMap<>(); // auxillary class
+    private Map<Integer, Set<AutoState>> states = new HashMap<>();
+    private Map<Set<AutoState>, Integer> statesSet = new HashMap<>(); // auxillary class
 
-    private Map<int, String> finalSet = new HashMap<>();
+    private Map<Integer, String> finalSet = new HashMap<>();
 
     private int start;
 
-    private Map<Pair<int, String>, int> transTable = new HashMap<>();
+    private Map<Pair<Integer, String>, Integer> transTable = new HashMap<>();
 
     public Dfa(){
     }
 
-    public void setDfaStates(Map<int, AutoState> dfaStates){
+    public void setDfaStates(Map<Integer, AutoState> dfaStates){
         this.dfaStates = dfaStates;
     }
 
-    public Map<int, AutoState> getDfaStates(){
+    public Map<Integer, AutoState> getDfaStates(){
         return this.dfaStates;
     }
 
@@ -32,7 +40,11 @@ public class Dfa{
         this.finalSet.put(state, token);
     }
 
-    public void setFinalSetComp(Map<int, String> fS){
+    public Map<Integer, String> getFinalSetComp(){
+        return this.finalSet;
+    }
+
+    public void setFinalSetComp(Map<Integer, String> fs){
         this.finalSet = fs;
     }
 
@@ -41,7 +53,7 @@ public class Dfa{
     }
 
     public int getDfaEdge(int src, String alphabet){
-        return this.transTable.getOrDefualt(new Pair<>(src, alphabet), -1);
+        return this.transTable.getOrDefault(new Pair<>(src, alphabet), -1);
     }
 
     public void setStates(int state, Set<AutoState> states){
@@ -59,7 +71,7 @@ public class Dfa{
             }
             if(currPri > -1){
                 // at least one final Nfa state found
-                finalSet.put(state, currTok);
+                this.finalSet.put(state, currTok);
             }
             this.maxNumStates = Math.max(this.maxNumStates, state+1);
         }
@@ -69,6 +81,10 @@ public class Dfa{
 
     public Set<AutoState> getStates(int state){
         return this.states.getOrDefault(state, new HashSet<>());
+    }
+
+    public Map<Integer, Set<AutoState>> getStatesComp(){
+        return this.states;
     }
 
     public int getState(Set<AutoState> states){
@@ -87,7 +103,7 @@ public class Dfa{
         return this.start;
     }
 
-    public void setTransTable(Map<Pair<int, String>, int> tt){
+    public void setTransTable(Map<Pair<Integer, String>, Integer> tt){
         this.transTable = tt;
     }
 
@@ -95,14 +111,19 @@ public class Dfa{
         this.maxNumStates = x;
     }
 
+    public int getMaxNumStates(){
+        return this.maxNumStates;
+    }
+
     public Dfa minDfa(){
         // initially non-final states and final states are in 2 different partitions.
+        // but final states are also divided by the token
         List<Partition> partitions = new ArrayList<>();
-        Map<String, Pair<int, Partition>> finalParts = new HashMap<>();
+        Map<String, Pair<Integer, Partition>> finalParts = new HashMap<>();
         Partition nonFinalParts = new Partition();
-        Map<int, int> nodeToPart = new HashMap<>();
+        Map<Integer, Integer> nodeToPart = new HashMap<>();
 
-        Set<Partition> parts = new HashSet<>(Set.of(nonFinalParts));
+        Set<Partition> parts = new HashSet<>();
 
         int currFinIdx = 1;
         for(int i=0; i < this.maxNumStates; ++i){
@@ -112,7 +133,7 @@ public class Dfa{
             }else{
                 String tok = finalSet.get(i);
 
-                if(!finalParts.conatinsKey(tok)){
+                if(!finalParts.containsKey(tok)){
                     // new tok partition
                     finalParts.put(tok, new Pair<>(currFinIdx, new Partition(List.of(i))));
                     nodeToPart.put(i, currFinIdx);
@@ -124,8 +145,12 @@ public class Dfa{
                 nodeToPart.put(i, finalParts.get(tok).first());
             }
         }
+        parts.add(nonFinalParts);
+        for (Pair<Integer, Partition> p : finalParts.values()) {
+            parts.add(p.second());
+        }
 
-        Pair<Set<Partition>, Map<int, int>> currParts;
+        Pair<List<Partition>, Map<Integer, Integer>> currParts;
         while(true){
             currParts = this.pokeParts(parts.stream().toList(), nodeToPart);
             Set<Partition> partSet = new HashSet<>(currParts.first());
@@ -134,34 +159,37 @@ public class Dfa{
             parts = partSet;
         }
 
-        Dfa miniDfa = this.consMinDfa(parts, nodeToPart);
+        Dfa miniDfa = this.consMinDfa(parts.stream().toList(), nodeToPart);
         return miniDfa;
     }
 
-    public Dfa consMinDfa(List<Partition> parts, Map<int, int> nodeToPart){
+    public Dfa consMinDfa(List<Partition> parts, Map<Integer, Integer> nodeToPart){
         Dfa finalMinDfa = new Dfa();
 
-        Map<int, String> newFinalSet = new HashSet<>();
-        Map<int, AutoState> _dfaStates = new HashMap<>();
-        Map<Pair<int, String>, int> newTransTable  = new HashMap<>();
+        Map<Integer, String> newFinalSet = new HashMap<>();
+        Map<Integer, AutoState> _dfaStates = new HashMap<>();
+        Map<Pair<Integer, String>, Integer> newTransTable  = new HashMap<>();
         finalMinDfa.setMaxNumStates(parts.size());
         int i = 0;
 
-        for(Parititon part: parts){
+        for(Partition part: parts){
             AutoState state = new AutoState("finalDfa_" + String.valueOf(i), new ArrayList<>(), new ArrayList<>());
             int node = part.pickOne();
             int partNode = nodeToPart.get(node);
             _dfaStates.put(partNode, state);
+            i+=1;
         }
 
         for(Partition part: parts){
             for(int p: part){
                 if(finalSet.containsKey(p) && !newFinalSet.containsKey(nodeToPart.get(p))){
                     newFinalSet.put(nodeToPart.get(p), finalSet.get(p));
-                    Set<AutoState> statesInPart = this.states.get(p);
+                    Set<AutoState> statesInPart = this.states.getOrDefault(p, Collections.emptySet());
+                    int maxPri = -1;
                     for(AutoState s: statesInPart){
-                        if(s.getIsFinal()){
-                            _dfaStates.get(nodeToPart.get(p)).markFinal(finalSet.get(p), s.getPri());
+                        if(s.getIsFinal() && s.getPri() > maxPri){
+                            maxPri = s.getPri();
+                            _dfaStates.get(nodeToPart.get(p)).markFinal(finalSet.get(p), maxPri);
                         }
                     }
                 }
@@ -181,45 +209,47 @@ public class Dfa{
 
                 }
             }
-            i+=1;
         }
         finalMinDfa.setDfaStates(_dfaStates);
-        finalMinDfa.setFinalSet(newFinalSet);
+        finalMinDfa.setFinalSetComp(newFinalSet);
         finalMinDfa.setTransTable(newTransTable);
         return finalMinDfa;
     }
 
-    public Pair<List<Partition>, Map<int, int>> pokeParts(List<Partition> parts, Map<int, int> nodeToPart){
+    public Pair<List<Partition>, Map<Integer, Integer>> pokeParts(List<Partition> parts, Map<Integer, Integer> nodeToPart){
         Alphabets alp = new Alphabets();
         List<Partition> newParts = new ArrayList<>();
-        Map<int, int> newNodeToPart = new HashMap<>();
+        Map<Integer, Integer> newNodeToPart = new HashMap<>();
         for(int i=0; i<parts.size(); ++i){
             if(parts.get(i).size() < 2){
+                int currPartIdx = newParts.size();
                 newParts.add(parts.get(i));
+                newNodeToPart.put(parts.get(i).pickOne(), currPartIdx);
                 continue;
             }
             // the key idea is to sort "string"(s)
-            List<Pair<int, String>> partMap = new ArrayList<>();
-            List parList = parts.get(i);
-            for(int p: parList.toList()){
+            List<Pair<Integer, String>> partMap = new ArrayList<>();
+            Partition parList = parts.get(i);
+            for(int p: parList){
                 //Pair<int, String> partMapEle = new Pair<>();
-                String transStr = "";
+                //String transStr = "";
+                StringBuilder transStr = new StringBuilder();
                 for(int j=32; j<127; ++j){
                     int tarNode = transTable.getOrDefault(new Pair<>(p, alp.getAlphabet(j)), -1);
                     int tarPart = nodeToPart.getOrDefault(tarNode, -1);
-                    transStr += "+" + String.valueOf(tarPart);
+                    transStr.append('+').append(tarPart);
                 }
-                partMap.add(new Pair<int, String>(p, transStr));
+                partMap.add(new Pair<>(p, transStr.toString()));
             }
-            partMap.sort(Comparator.comparing(Pair::getSecond));
+            partMap.sort(Comparator.comparing(Pair::second));
             Partition cpar = new Partition();
             cpar.addNode(partMap.get(0).first());
             for(int j=1; j<partMap.size(); j++){
-                if(partMap.get(j).second() == partMap.get(j-1).second()){
+                if(partMap.get(j).second().equals(partMap.get(j-1).second())){
                     cpar.addNode(partMap.get(j).first());
                 }else{
                     int currPartIdx = newParts.size();
-                    for(int p: cpar.toList()){
+                    for(int p: cpar){
                         newNodeToPart.put(p, currPartIdx);
                     }
                     newParts.add(cpar);
@@ -227,7 +257,13 @@ public class Dfa{
                     cpar.addNode(partMap.get(j).first());
                 }
             }
+
+            int currPartIdx = newParts.size();
+            for(int p: cpar){
+                newNodeToPart.put(p, currPartIdx);
+            }
+            newParts.add(cpar); //last partition
         }
-        return new Pair(newParts, newNodeToPart);
+        return new Pair<>(newParts, newNodeToPart);
     }
 }

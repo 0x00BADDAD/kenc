@@ -1,21 +1,21 @@
-package org.kenlang.lexer;
+package space.unmei.lexer;
 
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 
-import org.kenlang.lexer.Pair;
 
-
-import org.kenlang.lexer.Pair;
 
 public class AutoState{
-    // keys are all the alphabets of the language incl. epsilon
+    //keys are all the alphabets of the language incl. epsilon
     private final Map<String, Set<AutoState>> in = new HashMap<>();
     private final Map<String, Set<AutoState>> out = new HashMap<>();
 
-    private String name; // this name will be unique
+    private String name; // this name will be unique. Any state with same name must have
+    // same contents for other live fields as well.
 
     private String token;
     private boolean isFinal = false;
@@ -31,12 +31,12 @@ public class AutoState{
         }
     }
 
-    public AutoState getIn(){
-        rerurn this.in;
+    public Map<String, Set<AutoState>> getIn(){
+        return this.in;
     }
 
-    public AutoState getOut(){
-        rerurn this.out;
+    public Map<String, Set<AutoState>> getOut(){
+        return this.out;
     }
 
 
@@ -86,5 +86,15 @@ public class AutoState{
         return this.token;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AutoState other)) return false;
+        return Objects.equals(name, other.name);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
+    }
 }

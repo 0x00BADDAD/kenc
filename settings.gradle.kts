@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "kenlang"
-include("app", "list", "utilities")
+include("kenc", "list", "utilities", "lexer")

@@ -27,11 +27,7 @@ dependencies {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-<<<<<<< HEAD
-        languageVersion = JavaLanguageVersion.of(8)
-=======
         languageVersion = JavaLanguageVersion.of(20)
->>>>>>> origin/main
     }
 }
 

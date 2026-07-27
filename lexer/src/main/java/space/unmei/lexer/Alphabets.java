@@ -1,12 +1,12 @@
-package org.kenlang.lexer;
+package space.unmei.lexer;
 
 import java.util.Map;
 import java.util.HashMap;
 
 
 public class Alphabets{
-    
-    private final Map<int, String> alphabets = new HashMap<>();
+
+    private final Map<Integer, String> alphabets = new HashMap<>();
 
     public Alphabets(){
         for(int i = 32; i < 128; i++){
@@ -21,10 +21,5 @@ public class Alphabets{
     public String getAlphabet(int asciiCode){
         return this.alphabets.get(asciiCode);
     }
-
-
-
-
-
 
 }

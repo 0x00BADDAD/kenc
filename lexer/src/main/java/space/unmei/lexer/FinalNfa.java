@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 
 public class FinalNfa{
+    // this class is for the Nfa when all the smaller Nfas for each of the regex is
+    // combined.
     private final Set<Nfa> nfaSet = new HashSet<>();
     private final AutoState startNode = new AutoState("START", new ArrayList<>(), new ArrayList<>());
     private int totalNumStates = 1;
@@ -39,21 +43,22 @@ public class FinalNfa{
         newDfa.setStates(0, states0);
         newDfa.setStart(0);
         int idx1 = 0, idx2 = 0;
-        Alphabets alp = new Alphabets();
+
+        List<String> alps = Alphabets.ALL_ALPHAS;
         while(idx1 <= idx2){
-            for(int i = 32; i <= 126; ++i){
-                Set<AutoState> possibleNewDfaState = this.closure(this.makeDfaEdge(newDfa.getStates(idx1), alp.getAlphabet(i)));
+            for(String alp : alps){
+                Set<AutoState> possibleNewDfaState = this.closure(this.makeDfaEdge(newDfa.getStates(idx1), alp));
 
                 if(possibleNewDfaState.size() <= 0){continue;}
 
                 boolean isDup = newDfa.isStatesAlreadyExists(possibleNewDfaState);
                 if(isDup){
                     int tar = newDfa.getState(possibleNewDfaState);
-                    newDfa.setDfaEdge(idx1, tar, alp.getAlphabet(i));
+                    newDfa.setDfaEdge(idx1, tar, alp);
                 }else{
                     idx2+=1;
                     newDfa.setStates(idx2, possibleNewDfaState);
-                    newDfa.setDfaEdge(idx1, idx2, alp.getAlphabet(i));
+                    newDfa.setDfaEdge(idx1, idx2, alp);
                 }
             }
             idx1+=1;

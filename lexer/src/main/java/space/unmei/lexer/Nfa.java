@@ -76,6 +76,46 @@ public class Nfa{
         this.makeNfa(tailAlpha);
     }
 
+    public void printNfa(){
+        // state-name(head|tail): {...}
+        // in: {[name1, alp1], [name2, alp2], ...}
+        // out: {[name1, alp1], [name2, alp2], ...}
+        for(AutoState state: this.nfaStates){
+            String currState = "";
+            if(state.equals(this.head)){
+                currState = "head";
+            }
+            if(state.equals(this.tail)){
+                currState = "tail";
+            }
+            System.out.println("state-name("+ currState + "): " + state.getName());
+            StringBuilder sb = new StringBuilder();
+            for(Map.Entry<String, Set<AutoState>> entry : state.getIn().entrySet()){
+                sb.append("[ ");
+                sb.append(entry.getKey());
+                sb.append(" -- ");
+                for(AutoState ss: entry.getValue()){
+                    sb.append(ss.getName() + ", ");
+                }
+                sb.append(" ], ");
+            }
+            System.out.println("in: {" + sb.toString() + "}");
+            sb = new StringBuilder();
+            for(Map.Entry<String, Set<AutoState>> entry : state.getOut().entrySet()){
+                sb.append("[ ");
+                sb.append(entry.getKey());
+                sb.append(" -- ");
+                for(AutoState ss: entry.getValue()){
+                    sb.append(ss.getName() + ", ");
+                }
+                sb.append(" ], ");
+            }
+            System.out.println("out: {" + sb.toString() + "}");
+        }
+    }
+
+    // this method is simply a util method that uses other methods.
+    // it quickly creates an Nfa with a single node and single tail.
     public void makeNfa(String tailAlpha){
         AutoState s1_ = new AutoState("", new ArrayList<>(), new ArrayList<>());
         s1_.addIn(tailAlpha, null);
@@ -97,6 +137,9 @@ public class Nfa{
         // combine this Nfa and its states with another Nfa and return a new Nfa
         switch(op){
             case "and":{
+                if(otherNfa == null){
+                    return this;
+                }
                 // head of this nfa gets connected to tail of other Nfa
                 AutoState otherTail = otherNfa.getTail();
                 otherTail.addIn(otherNfa.getTailAlphabet(), this.head);
@@ -111,6 +154,9 @@ public class Nfa{
                 return otherNfa;
             }
             case "or":{
+                if(otherNfa == null){
+                    return this;
+                }
                 AutoState extra1 = new AutoState(this.namingPrefix + "_" + String.valueOf(this.currIdx), new ArrayList<>(), new ArrayList<>());
                 this.currIdx+=1;
                 AutoState extra2 = new AutoState(this.namingPrefix + "_" + String.valueOf(this.currIdx), new ArrayList<>(), new ArrayList<>());
@@ -166,6 +212,19 @@ public class Nfa{
                 Nfa newNfa = this.copy();
                 Nfa plusNfa = newNfa.transform(newNfa.transform(null, "star"), "and");
                 return plusNfa;
+            }
+            case "question":{
+                if(otherNfa != null){
+                    throw new IllegalArgumentException("otherNfa has to be null with plus op.");
+                }
+                AutoState s1_ = new AutoState("", new ArrayList<>(), new ArrayList<>());
+                s1_.addIn("epsilon", null);
+                s1_.addOut("epsilon", this.head);
+                s1_.addOut(this.tailAlphabet, this.tail);
+                this.tail.addIn(this.tailAlphabet, s1_);
+                this.setTailAlphabet("epsilon");
+                this.addState(s1_, false, true);
+                return this;
             }
             default:
                 throw new IllegalArgumentException("Unknown operator: " + op);

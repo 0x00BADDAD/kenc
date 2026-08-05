@@ -56,6 +56,54 @@ public class Dfa{
         return this.transTable.getOrDefault(new Pair<>(src, alphabet), -1);
     }
 
+    public void printDfaTransTable(){
+        for(Map.Entry<Pair<Integer, String>, Integer> ent: this.transTable.entrySet()){
+            Pair<Integer, String> pk = ent.getKey();
+            Integer pv = ent.getValue();
+
+            System.out.println("-------------------");
+            System.out.println("{" + String.valueOf(pk.first())+ ", "+ pk.second() +"} --> {" + String.valueOf(pv) + "}");
+        }
+    }
+
+    public void printDfa(){
+        // state-name(head|tail): {...}
+        // in: {[name1, alp1], [name2, alp2], ...}
+        // out: {[name1, alp1], [name2, alp2], ...}
+        for(Map.Entry<Integer, AutoState> ent: this.dfaStates.entrySet()){
+            String tokVal = "";
+            if(this.finalSet.containsKey(ent.getKey())){
+                tokVal = this.finalSet.get(ent.getKey());
+            }
+            AutoState state = ent.getValue();
+
+            System.out.println("state-name("+ tokVal + "): " + state.getName());
+            StringBuilder sb = new StringBuilder();
+            for(Map.Entry<String, Set<AutoState>> entry : state.getIn().entrySet()){
+                sb.append("[ ");
+                sb.append(entry.getKey());
+                sb.append(" -- ");
+                for(AutoState ss: entry.getValue()){
+                    sb.append(ss.getName() + ", ");
+                }
+                sb.append(" ], ");
+            }
+            System.out.println("in: {" + sb.toString() + "}");
+            sb = new StringBuilder();
+            for(Map.Entry<String, Set<AutoState>> entry : state.getOut().entrySet()){
+                sb.append("[ ");
+                sb.append(entry.getKey());
+                sb.append(" -- ");
+                for(AutoState ss: entry.getValue()){
+                    sb.append(ss.getName() + ", ");
+                }
+                sb.append(" ], ");
+            }
+            System.out.println("out: {" + sb.toString() + "}");
+        }
+    }
+
+
     public void setStates(int state, Set<AutoState> states){
         if(!this.states.containsKey(state)){
             // first time the state is being put into the Dfa. This a great chance to also check
@@ -71,6 +119,7 @@ public class Dfa{
             }
             if(currPri > -1){
                 // at least one final Nfa state found
+                //System.out.println(String.valueOf(state) + "-- " + currTok);
                 this.finalSet.put(state, currTok);
             }
             this.maxNumStates = Math.max(this.maxNumStates, state+1);
@@ -197,9 +246,9 @@ public class Dfa{
                     // this partition contains the start state  hence it is  a start state in the minDfa
                     finalMinDfa.setStart(nodeToPart.get(0));
                 }
-                Alphabets alp = new Alphabets();
-                for(int a =32; a<127; ++a){
-                    String transAlp = alp.getAlphabet(a);
+                List<String> alps = Alphabets.ALL_ALPHAS;
+                for(String alp: alps){
+                    String transAlp = alp;
                     int tarOldNode = this.transTable.getOrDefault(new Pair<>(p, transAlp), -1);
                     if(tarOldNode != -1 && !newTransTable.containsKey(new Pair<>(nodeToPart.get(p), transAlp))){
                         newTransTable.put(new Pair<>(nodeToPart.get(p), transAlp), nodeToPart.get(tarOldNode));
@@ -217,7 +266,7 @@ public class Dfa{
     }
 
     public Pair<List<Partition>, Map<Integer, Integer>> pokeParts(List<Partition> parts, Map<Integer, Integer> nodeToPart){
-        Alphabets alp = new Alphabets();
+        List<String> alps = Alphabets.ALL_ALPHAS;
         List<Partition> newParts = new ArrayList<>();
         Map<Integer, Integer> newNodeToPart = new HashMap<>();
         for(int i=0; i<parts.size(); ++i){
@@ -234,8 +283,8 @@ public class Dfa{
                 //Pair<int, String> partMapEle = new Pair<>();
                 //String transStr = "";
                 StringBuilder transStr = new StringBuilder();
-                for(int j=32; j<127; ++j){
-                    int tarNode = transTable.getOrDefault(new Pair<>(p, alp.getAlphabet(j)), -1);
+                for(String alp: alps){
+                    int tarNode = transTable.getOrDefault(new Pair<>(p, alp), -1);
                     int tarPart = nodeToPart.getOrDefault(tarNode, -1);
                     transStr.append('+').append(tarPart);
                 }

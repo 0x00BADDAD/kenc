@@ -30,6 +30,8 @@ public class Lexer {
             sb.append(ch);
        }
 
+       System.out.println("str to lex: " + sb.toString());
+
        List<LexToken> tokens = new ArrayList<>();
 
        int totLen = sb.length();
@@ -59,6 +61,28 @@ public class Lexer {
                     if(dfa.getFinalSetComp().containsKey(tar)){
                         lastFinalPos =  currIdx;
                         lastFinalState = tar;
+                    }
+                    if(currIdx == totLen -1){
+                        // reached the end of the string
+                        // just return the stored final
+                        if(lastFinalState != -1){
+                            // we had found a final state. so update the startIdx to it
+                            // and add a LexToken
+                            String tokName = dfa.getFinalSetComp().get(lastFinalState);
+                            String tokContent = sb.substring(lastStartIdx, lastFinalPos+1);
+                            LexToken tok = new LexToken(tokName, tokContent);
+                            tokens.add(tok);
+                            lastStartIdx = lastFinalPos + 1;
+                            lastFinalState = -1;
+                        }else{
+                            // error
+                            throw new LexerException(
+                             "Unexpected character " + "'"+sb.charAt(currIdx)+"'",
+                             newLinesUptoStartIdx + newLinesAfterStartIdx,
+                             currIdx-lastNewLine
+                            );
+                        }
+                        break;
                     }
                     currIdx+=1;
                 }else{
@@ -91,6 +115,7 @@ public class Lexer {
                 }
            }
        }
+       tokens.add(new LexToken("EOF", ""));
        return tokens;
     }
 }

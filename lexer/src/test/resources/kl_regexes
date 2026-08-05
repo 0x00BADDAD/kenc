@@ -23,15 +23,16 @@ OPEN_PAREN: (
 CLOSE_PAREN: )
 OPEN_SQUARE: [
 CLOSE_SQUARE: ]
+COMMA: ,
 
 // ops
 
 //ARITH
 ASSIGN: =
-PLUS: +
+PLUS: \+
 MINUS: -
 DIV: /
-MUL: *
+MUL: \*
 MOD: %
 
 //LOGICAL
@@ -45,8 +46,8 @@ OR: or
 XOR: xor
 
 ID: [a-z_]([a-z0-9_])*
-STRING_LIT: "[ASCII32-ASCII126]*"
-NUM: [0-9]+ | -[0-9]+
-WHITESPACE: //[^\n]*\n | /*.**/ | [ \n\t]*
+STRING_LIT: "[ -!]*|[#-~\\"]*"
+NUM: [0-9]+
+WHITESPACE: //([ -~\t]*\n)|(/\*[ -~\n\t]*\*/)|([ \n\t])*
 
 

@@ -1,4 +1,4 @@
-package space.unmei.regex;
+package space.unmei.parser;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -10,9 +10,9 @@ import java.util.Objects;
 
 import java.util.function.Supplier;
 
-// U -> Token Enum
+// U -> Token Type
 // T -> type returned by the semantic reduce action
-public class GramProd<T, U extends Enum<U>>{
+public class GramProd<T, U>{
 
     private GramSymbol<U> lhs;
     private List<GramSymbol<U>> rhs = new ArrayList<>();
@@ -77,3 +77,4 @@ public class GramProd<T, U extends Enum<U>>{
     }
 
 }
+

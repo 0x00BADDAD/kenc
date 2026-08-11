@@ -3,7 +3,7 @@
 /* /* multi
       line comment */
 
-type struct_type = {name: string                 , addr  : string  , car  : string  } ;
+type struct_type = {name: string, addr: string, car: string};
 
 func test(input : struct_type) : string {
 

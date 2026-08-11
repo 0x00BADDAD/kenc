@@ -1,0 +1,155 @@
+Start -> Prog $
+
+Prog -> Decls
+
+Decls -> Decl Decls
+Decls ->
+
+Decl -> VarDec SEMI_COLON
+Decl -> VarDecInit SEMI_COLON
+Decl -> TypeDec SEMI_COLON
+Decl -> FunDec
+
+VarDecInit -> VAR ID ASSIGN Exp
+VarDec -> VAR ID
+VarDec -> VAR ID COLON TypeVal
+VarDecInit -> VAR ID COLON TypeVal ASSIGN Exp
+
+TypeDec -> TYPE ID ASSIGN TypeVal
+
+TypeVal -> ID
+TypeVal -> OPEN_BRACE TypeFields CLOSE_BRACE
+TypeVal -> ARRAY OF TypeVal
+
+TypeFields ->
+TypeFields -> ID COLON TypeVal TypeFields'
+TypeFields' -> COMMA ID COLON TypeVal TypeFields'
+TypeFields' ->
+
+FunDec -> FUNC ID OPEN_PAREN TypeFields CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
+FunDec -> FUNC ID OPEN_PAREN TypeFields CLOSE_PAREN COLON TypeVal OPEN_BRACE Stmts CLOSE_BRACE
+
+Return -> RETURN Exp SEMI_COLON
+
+Stmts -> Stmt Stmts
+Stmts ->
+
+// Expression Tree
+
+Exp -> LogicalOr
+
+LogicalOr
+    -> LogicalOr OR LogicalAnd
+    | LogicalAnd
+
+LogicalAnd
+    -> LogicalAnd AND Equality
+    | Equality
+
+Equality
+    -> Equality ISEQUAL Rel
+    | Equality NOT_EQUAL Rel
+    | Rel
+
+Rel
+    -> Rel LESS_THAN Add
+    | Rel GREATER_THAN Add
+    | Add
+
+Add
+    -> Add PLUS Mul
+    | Add MINUS Mul
+    | Mul
+
+Mul
+    -> Mul MUL Unary
+    | Mul DIV Unary
+    | Mul MOD Unary
+    | Unary
+
+Unary
+    -> NEGATION Unary
+    | Primary
+
+Primary
+    -> NUM
+    | STRING_LIT
+    | Lvalue
+    | FunCall
+    | NIL
+    | IfExpr
+    | IfElseExpr
+    | "(" Exp ")"
+    | ID OPEN_BRACE FieldInit CLOSE_BRACE
+    | ID OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+
+FieldInit
+    ->
+    | ID ASSIGN Exp FieldTail
+
+FieldTail
+    ->
+    | COMMA ID ASSIGN Exp FieldTail
+
+
+
+Stmt -> Assign SEMI_COLON
+Stmt -> FunCall SEMI_COLON
+Stmt -> IfElseStmt
+Stmt -> IfStmt
+Stmt -> While
+Stmt -> For
+Stmt -> VarDec SEMI_COLON
+Stmt -> TypeDec SEMI_COLON
+Stmt -> BreakStmt
+Stmt -> ContinueStmt
+Stmt -> Return
+
+BreakStmt -> BREAK SEMI_COLON
+ContinueStmt -> CONTINUE SEMI_COLON
+
+Assign -> Lvalue ASSIGN Exp
+Assign -> Lvalue ACC_DIV Exp
+Assign -> Lvalue ACC_SUB Exp
+Assign -> Lvalue ACC_MUL Exp
+Assign -> Lvalue ACC_MOD Exp
+Assign -> Lvalue ACC_PLUS Exp
+
+Lvalue -> ID
+Lvalue -> Lvalue ACCESSOR ID
+Lvalue -> Lvalue OPEN_SQUARE Exp CLOSE_SQUARE
+
+IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp CLOSE_BRACE
+
+IfElseStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE ELSE OPEN_BRACE Stmts CLOSE_BRACE
+
+
+IfExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE
+
+IfStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
+
+While -> WHILE OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
+
+For -> FOR OPEN_PAREN ForFirst SEMI_COLON ForSecond SEMI_COLON ForThird CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
+
+
+
+ForFirst -> VarDecInit
+ForFirst -> Assign
+ForFirst ->
+
+ForSecond -> Exp
+ForSecond ->
+
+ForThird -> Assign
+ForThird ->
+
+FunCall -> ID OPEN_PAREN Args CLOSE_PAREN
+
+Args ->
+Args -> Exp ArgTail
+
+ArgTail ->
+ArgTail -> COMMA Exp ArgTail
+
+

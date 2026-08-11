@@ -12,6 +12,7 @@ OF: of
 ARRAY: array
 RETURN: return
 FUNC: func
+NIL: nil
 
 // punctuations
 OPEN_BRACE: {
@@ -24,6 +25,7 @@ CLOSE_PAREN: )
 OPEN_SQUARE: [
 CLOSE_SQUARE: ]
 COMMA: ,
+ACCESSOR: .
 
 // ops
 
@@ -34,6 +36,11 @@ MINUS: -
 DIV: /
 MUL: \*
 MOD: %
+ACC_PLUS: +=
+ACC_SUB: -=
+ACC_DIV: /=
+ACC_MUL: *=
+ACC_MOD: %=
 
 //LOGICAL
 ISEQUAL: ==
@@ -41,9 +48,13 @@ GREATER_THAN: >
 LESS_THAN: <
 NOT_EQUAL: !=
 NEGATION: !
-AND: and
-OR: or
-XOR: xor
+AND: &&
+OR: ||
+
+// CON DIS
+CON: &
+DIS: |
+
 
 ID: [a-z_]([a-z0-9_])*
 STRING_LIT: "[ -!]*|[#-~\\"]*"

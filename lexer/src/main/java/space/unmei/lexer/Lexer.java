@@ -71,6 +71,10 @@ public class Lexer {
                             String tokName = dfa.getFinalSetComp().get(lastFinalState);
                             String tokContent = sb.substring(lastStartIdx, lastFinalPos+1);
                             LexToken tok = new LexToken(tokName, tokContent);
+
+                            tok.setLineNo(newLinesUptoStartIdx + newLinesAfterStartIdx);
+                            tok.setColNo(currIdx-lastNewLine);
+
                             tokens.add(tok);
                             lastStartIdx = lastFinalPos + 1;
                             lastFinalState = -1;
@@ -103,6 +107,10 @@ public class Lexer {
                         String tokName = dfa.getFinalSetComp().get(lastFinalState);
                         String tokContent = sb.substring(lastStartIdx, lastFinalPos+1);
                         LexToken tok = new LexToken(tokName, tokContent);
+
+                        tok.setLineNo(newLinesUptoStartIdx + newLinesAfterStartIdx);
+                        tok.setColNo(currIdx-lastNewLine);
+
                         tokens.add(tok);
 
                         lastStartIdx = lastFinalPos + 1;

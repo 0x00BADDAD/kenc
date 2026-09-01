@@ -7,7 +7,8 @@ public class LR1State<T, U>{
     private List<LR1item<T, U>> items = new ArrayList<>();
     private Map<GramSymbol<U>, List<GramProd<T, U>> lhsToProds;
     private boolean isClosed = false;
-
+    // the key in this map is a termSym and this map represents a row in the parser LR1
+    // table.
     private Map<GramSymbol<U>, Action> actions = HashMap<>();
 
 
@@ -16,7 +17,7 @@ public class LR1State<T, U>{
 
     public void addAction(GramSymbol<U> sym, Action act){
         if(this.actions.containsKey(sym)){
-            throw new IllegalArgumentException("Can't have more than 2 actions. LR1Parsing failed!");
+            throw new IllegalArgumentException("Can't have more than 2 actions. LR1Parsing failed tabble formation failed!");
         }
         this.actions.put(sym , act);
     }

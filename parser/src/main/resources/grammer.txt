@@ -11,9 +11,9 @@ Decl -> TypeDec SEMI_COLON
 Decl -> FunDec
 
 VarDecInit -> VAR ID ASSIGN Exp
+VarDecInit -> VAR ID COLON TypeVal ASSIGN Exp
 VarDec -> VAR ID
 VarDec -> VAR ID COLON TypeVal
-VarDecInit -> VAR ID COLON TypeVal ASSIGN Exp
 
 TypeDec -> TYPE ID ASSIGN TypeVal
 
@@ -79,9 +79,13 @@ Primary
     | NIL
     | IfExpr
     | IfElseExpr
-    | "(" Exp ")"
-    | ID OPEN_BRACE FieldInit CLOSE_BRACE
-    | ID OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+    | Exp
+    | RecordExpr
+    | ArrayExpr
+
+
+RecordExpr -> ID OPEN_BRACE FieldInit CLOSE_BRACE
+ArrayExpr -> ID OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
 
 FieldInit
     ->
@@ -92,7 +96,6 @@ FieldTail
     | COMMA ID ASSIGN Exp FieldTail
 
 
-
 Stmt -> Assign SEMI_COLON
 Stmt -> FunCall SEMI_COLON
 Stmt -> IfElseStmt
@@ -100,6 +103,7 @@ Stmt -> IfStmt
 Stmt -> While
 Stmt -> For
 Stmt -> VarDec SEMI_COLON
+Stmt -> VarDecInit SEMI_COLON
 Stmt -> TypeDec SEMI_COLON
 Stmt -> BreakStmt
 Stmt -> ContinueStmt
@@ -130,9 +134,16 @@ IfStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
 While -> WHILE OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
-For -> FOR OPEN_PAREN ForFirst SEMI_COLON ForSecond SEMI_COLON ForThird CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
+For -> FOR OPEN_PAREN ForFirsts SEMI_COLON ForSeconds SEMI_COLON ForThirds CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
+ForFirsts -> ForFirst COMMA ForFirsts
+ForFirsts -> ForFirst
 
+ForSeconds -> ForSecond COMMA ForSeconds
+ForSeconds -> ForSecond
+
+ForThirds -> ForThird COMMA ForThirds
+ForThirds -> ForThird
 
 ForFirst -> VarDecInit
 ForFirst -> Assign
@@ -144,10 +155,10 @@ ForSecond ->
 ForThird -> Assign
 ForThird ->
 
-FunCall -> ID OPEN_PAREN Args CLOSE_PAREN
+FunCall -> ID OPEN_PAREN FunArgs CLOSE_PAREN
 
-Args ->
-Args -> Exp ArgTail
+FunArgs ->
+FunArgs -> Exp ArgTail
 
 ArgTail ->
 ArgTail -> COMMA Exp ArgTail

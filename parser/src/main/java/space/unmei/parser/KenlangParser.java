@@ -6,8 +6,9 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
 
     public KenlangParser(){}
 
+    @Override
     public void setup(){
-        (this.parserSetup){
+        if(this.parserSetup){
             return;
         }
         String[] nonTermSyms = new String[]{
@@ -122,7 +123,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new LexToken("FOR", "for")
                 )
         );
-        List<Pair<List<String>, Supplier<T>>> prodStrs =  new ArrayList<>(
+        List<Pair<List<String>, Supplier<AstNode>>> prodStrs =  new ArrayList<>(
                 List.of(
                     new Pair<>(
                         List.of("Start", "Prog", "EOF"),
@@ -138,6 +139,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new Pair<>()
                     )
                 );
+        this.setup_(nonTermSyms, termSyms, prodStrs);
         this.parserSetup = true;
     }
 

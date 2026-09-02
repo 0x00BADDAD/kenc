@@ -64,13 +64,13 @@ public class LR1State<T, U>{
 
     public void closure(LR1State<T, U> state){
         // the LR1State returned is ref to the state passed
-        List<LR1item> currItems = state.items;
+        List<LR1item<T,U>> currItems = state.items;
         int idx = 0;
         Map<GramSymbol<U>, boolean> seenThisNonTerm = new HashMap<>();
         while(idx < items.size()){
             // for the item on this index see if the top of stack is before a nonTerm
             // then check if the nonTerm's GramProd hasn't been added before
-            LR1item it = currItems.get(idx);
+            LR1item<T,U> it = currItems.get(idx);
 
             if(it.getProd().getRhs().size() <= it.getStackTopIdx()){
                 idx += 1;

@@ -123,12 +123,23 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new LexToken("FOR", "for")
                 )
         );
-        List<Pair<List<String>, Supplier<AstNode>>> prodStrs =  new ArrayList<>(
+        List<Pair<List<String>, BiConsumer<Deque<LR1State<AstNode, LexToken>>, Deque<Pair<AstNode, GramSymbol<LexToken>>>>> prodStrs =  new ArrayList<>(
                 List.of(
                     new Pair<>(
                         List.of("Start", "Prog", "EOF"),
-                        () -> {
-                            
+                        (stateStack, symStack) -> {
+                            // we assume the stack are already lined up
+                            // with rhs syms of this prod
+                            stateStack.pop();
+                            symStack.pop(); // op EOF
+
+                            // pop Prog amd insert Start
+                            LR1State<?,?> progState = stateStack.pop();
+                            Pair<AstNode, GramSymbol<LexToken>> progSym = symStack.pop();
+
+                            Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                            stateStack.push(gotoAct.state());
+                            symStack.push(new Pair<>(progSym.first(), this.getLhs()));
                         }
                         ),
                     new Pair<>(),

@@ -5,12 +5,15 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import space.unmei.ast.AstNode;
+
 // T -> Token Type
 public class GramSymbol<T>{
 
     private boolean isNonTerm;
     private T token = null; // non-null when the Symbol is terminal
     private String value; // null when symbol is terminal.
+
 
     private Set<GramSymbol<T>> firstSet = new HashSet<>();
     private Set<GramSymbol<T>> followSet = new HashSet<>();

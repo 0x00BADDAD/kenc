@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-import java.util.function.Supplier;
+import java.util.function.BiConsumer;
 
 // U -> Token Type
 // T -> type returned by the semantic reduce action
@@ -16,11 +16,11 @@ public class GramProd<T, U>{
 
     private GramSymbol<U> lhs;
     private List<GramSymbol<U>> rhs = new ArrayList<>();
-    private Supplier<T> suppFunc;
+    private BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> suppFunc;
 
     public GramProd(){}
 
-    public GramProd(GramSymbol<U> lhs, List<GramSymbol<U>> rhs, Supplier<T> supp){
+    public GramProd(GramSymbol<U> lhs, List<GramSymbol<U>> rhs, BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> supp){
         this.lhs = lhs;
         this.rhs = rhs;
         this.suppFunc = supp;
@@ -30,7 +30,7 @@ public class GramProd<T, U>{
         return this.lhs;
     }
 
-    public Supplier<T> getSupp(){
+    public BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> getSupp(){
         return this.suppFunc;
     }
 

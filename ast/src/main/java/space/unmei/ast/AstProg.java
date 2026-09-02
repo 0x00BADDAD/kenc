@@ -1,5 +1,6 @@
 package space.unmei.ast;
 
+import space.unmei.ast.decls.AstDecl;
 
 public class AstProg extends AstNode{
 
@@ -8,5 +9,4 @@ public class AstProg extends AstNode{
     public AstProg(List<AstDecl> decls){
         this.decls = decls;
     }
-
 }

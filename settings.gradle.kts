@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "kenc"
-include("kenc", "lexer", "parser", "ast")
+include("kenc", "lexer", "parser", "ast", "semant")

@@ -2,9 +2,8 @@ package space.unmei.ast.types;
 
 import space.unmei.ast.Pos;
 
-public class AstArrayType{
+public class AstArrayType extends AstType{
 
-    private Pos pos;
     private AstType arrTy;
 
     public AstArrayType(Pos pos, AstType arrTy){

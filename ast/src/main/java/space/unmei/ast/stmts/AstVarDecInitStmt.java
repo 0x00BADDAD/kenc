@@ -17,7 +17,5 @@ public class AstVarDecInitStmt extends AstStmt{
         this.varTy = varTy;
         this.initVal = initVal;
     }
-
-
 }
 

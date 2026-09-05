@@ -13,6 +13,8 @@ ARRAY: array
 RETURN: return
 FUNC: func
 NIL: nil
+TRUE: true
+FALSE: false
 
 // punctuations
 OPEN_BRACE: {

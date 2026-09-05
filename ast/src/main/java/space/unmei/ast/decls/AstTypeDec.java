@@ -6,7 +6,6 @@ import space.unmei.ast.types.AstType;
 
 public class AstTypeDec extends AstDecl{
 
-    private Pos pos;
     private Symbol tyName;
     private AstType tyVal;
 

@@ -9,7 +9,8 @@ public class AstArrayExp extends AstExp{
     private AstExp arrSize;
     private AstExp arrInitVal;
 
-    public AstArrayExp(Pos pos, Symbol arrName, AstExp arrSize, AstExp arrInitVal){
+    public AstArrayExp(Pos pos, AstType ty, Symbol arrName, AstExp arrSize, AstExp arrInitVal){
+        this.ty = ty;
         this.pos = pos;
         this.arrName = arrName;
         this.arrSize = arrSize;

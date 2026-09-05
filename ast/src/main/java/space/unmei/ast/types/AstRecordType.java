@@ -3,12 +3,11 @@ package space.unmei.ast.types;
 import space.unmei.ast.Pos;
 import space.unmei.semant.Symbol;
 
-public class AstRecordType{
+public class AstRecordType extends AstType{
 
-    private Pos pos;
-    private List<Pair<Symbol, AstType>> tyFields;
+    private AstTypeFields tyFields;
 
-    public AstRecordType(Pos pos, List<Pair<Symbol, AstType>> tyFields){
+    public AstRecordType(Pos pos, AstTypeFields tyFields){
         this.pos = pos;
         this.tyFields = tyFields;
     }

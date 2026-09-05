@@ -3,9 +3,8 @@ package space.unmei.ast.types;
 import space.unmei.ast.Pos;
 import space.unmei.semant.Symbol;
 
-public class AstNameType{
+public class AstNameType extends AstType{
 
-    private Pos pos;
     private Symbol tyName;
 
     public AstNameStmt(Pos pos, Symbol tyName){

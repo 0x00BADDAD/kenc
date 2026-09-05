@@ -6,8 +6,8 @@ public class AstStringExp extends AstExp{
 
     private String strLiteral;
 
-    public AstStringExp(Pos pos, String strLiteral){
-
+    public AstStringExp(Pos pos, AstType ty, String strLiteral){
+        this.ty = ty;
         this.pos = pos;
         this.strLiteral = strLiteral;
     }

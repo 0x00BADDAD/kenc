@@ -7,9 +7,9 @@ public class AstBinopExp extends AstExp{
 
     private AstExp leftExp;
     private AstExp rightExp;
-    private BinOpType opType;
+    private AstBinOpType opType;
 
-    public AstBinopExp(Pos pos, AstExp l, AstExp r, BinOpType ty){this.pos = pos; this.leftExp = l; this.rightExp = r; BinOpType opType = ty;}
+    public AstBinopExp(Pos pos, AstType ty, AstExp l, AstExp r, AstBinOpType ty){this.pos = pos; this.leftExp = l; this.rightExp = r; this.opType = ty; this.ty = ty;}
 
 }
 

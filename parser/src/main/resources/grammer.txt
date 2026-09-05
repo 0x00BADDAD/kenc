@@ -21,18 +21,12 @@ TypeVal -> ID
 TypeVal -> OPEN_BRACE TypeFields CLOSE_BRACE
 TypeVal -> ARRAY OF TypeVal
 
-TypeFields ->
-TypeFields -> ID COLON TypeVal TypeFields'
-TypeFields' -> COMMA ID COLON TypeVal TypeFields'
-TypeFields' ->
+TypeFields -> ID COLON TypeVal COMMA TypeFields
+TypeFields -> ID COLON TypeVal
 
 FunDec -> FUNC ID OPEN_PAREN TypeFields CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 FunDec -> FUNC ID OPEN_PAREN TypeFields CLOSE_PAREN COLON TypeVal OPEN_BRACE Stmts CLOSE_BRACE
 
-Return -> RETURN Exp SEMI_COLON
-
-Stmts -> Stmt Stmts
-Stmts ->
 
 // Expression Tree
 
@@ -53,8 +47,10 @@ Equality
 
 Rel
     -> Rel LESS_THAN Add
-    | Rel GREATER_THAN Add
-    | Add
+    |  Rel LESS_EQUAL Add
+    |  Rel GREATER_THAN Add
+    |  Rel GREATER_EQUAL Add
+    |  Add
 
 Add
     -> Add PLUS Mul
@@ -68,7 +64,8 @@ Mul
     | Unary
 
 Unary
-    -> NEGATION Unary
+    -> BOOL_NEGATION Unary
+    | MINUS Unary
     | Primary
 
 Primary
@@ -79,9 +76,11 @@ Primary
     | NIL
     | IfExpr
     | IfElseExpr
-    | Exp
+    | OPEN_PAREN Exp CLOSE_PAREN
     | RecordExpr
     | ArrayExpr
+    | TRUE
+    | FALSE
 
 
 RecordExpr -> ID OPEN_BRACE FieldInit CLOSE_BRACE
@@ -94,6 +93,10 @@ FieldInit
 FieldTail
     ->
     | COMMA ID ASSIGN Exp FieldTail
+
+
+Stmts -> Stmt Stmts
+Stmts ->
 
 
 Stmt -> Assign SEMI_COLON
@@ -109,6 +112,7 @@ Stmt -> BreakStmt
 Stmt -> ContinueStmt
 Stmt -> Return
 
+Return -> RETURN Exp SEMI_COLON
 BreakStmt -> BREAK SEMI_COLON
 ContinueStmt -> CONTINUE SEMI_COLON
 
@@ -123,12 +127,12 @@ Lvalue -> ID
 Lvalue -> Lvalue ACCESSOR ID
 Lvalue -> Lvalue OPEN_SQUARE Exp CLOSE_SQUARE
 
-IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp CLOSE_BRACE
+IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
 
 IfElseStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE ELSE OPEN_BRACE Stmts CLOSE_BRACE
 
 
-IfExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE
+IfExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
 
 IfStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 

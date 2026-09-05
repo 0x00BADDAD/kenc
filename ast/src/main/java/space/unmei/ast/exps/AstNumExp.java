@@ -8,7 +8,8 @@ public class AstNumExp extends AstExp{
     private Integer numVal;
     private Integer width;
 
-    public AstNumExp(Pos pos, Integer numVal, Integer width){
+    public AstNumExp(Pos pos, AstType ty, Integer numVal, Integer width){
+        this.ty = ty;
         this.pos = pos;
         this.numVal = numVal;
         this.width = width;

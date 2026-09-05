@@ -1,14 +1,12 @@
 package space.unmei.ast.stmts.fors;
 
 import space.unmei.ast.Pos;
-import space.unmei.ast.exps.AstExp;
 import space.unmei.ast.stmts.fors.AstForFirsts;
 import space.unmei.ast.stmts.fors.AstForSeconds;
 import space.unmei.ast.stmts.fors.AstForThirds;
 
-public class AstForStmt{
+public class AstForStmt extends AstStmt{
 
-    private Pos pos;
     private AstForFrists firsts;
     private AstForSeconds seconds;
     private AstForThirds thirds;

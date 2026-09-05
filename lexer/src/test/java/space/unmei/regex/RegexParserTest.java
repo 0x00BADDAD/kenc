@@ -122,6 +122,9 @@ public class RegexParserTest{
         finalNfa.addNfa(parser.runParse(new RegexLexer("return").lex()), "RETURN", 900);
         finalNfa.addNfa(parser.runParse(new RegexLexer("func").lex()), "FUNC", 900);
 
+        finalNfa.addNfa(parser.runParse(new RegexLexer("true").lex()), "TRUE", 900);
+        finalNfa.addNfa(parser.runParse(new RegexLexer("false").lex()), "FALSE", 900);
+
         // Punctuation (priority 600)
         finalNfa.addNfa(parser.runParse(new RegexLexer("{").lex()), "OPEN_BRACE", 600);
         finalNfa.addNfa(parser.runParse(new RegexLexer("}").lex()), "CLOSE_BRACE", 600);

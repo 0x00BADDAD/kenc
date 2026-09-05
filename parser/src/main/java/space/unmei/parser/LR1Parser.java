@@ -227,7 +227,7 @@ public abstract class LR1Parser<T, U>{
             gramSym.setSymbolToken(tok);
             gramSym.setIsNullable(false);
             this.addTermSym(gramSym);
-            this.addValueToSym(s.getName(), gramSym);
+            this.addValueToSym(tok.getName(), gramSym);
         }
 
         for(Pair<List<String>, BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>>>> prodPair: prodStrs){

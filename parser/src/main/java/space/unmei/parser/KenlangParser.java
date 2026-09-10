@@ -52,8 +52,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "ForFirst",
             "ForSecond",
             "ForThird",
-            "FunCallExp",
-            "FunCallStmt",
+            "FunCall",
             "Args",
             "ArgTail"
         };
@@ -979,7 +978,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("Primary", "FunCallExp"),
+                            List.of("Primary", "FunCall"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 Pair<AstFuncallExp, GramSymbol<LexToken>> fnCallSym = symStack.pop();
@@ -1213,7 +1212,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("Stmt", "FunCallStmt", "SEMI_COLON"),
+                            List.of("Stmt", "FunCall", "SEMI_COLON"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 LexToken semiColTok = symStack.pop().second().getSymbolToken();
@@ -1372,6 +1371,20 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 LexToken semiColTok = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 LexToken contTok = symStack.pop().second().getSymbolToken();
+                                AstContinueStmt contStmt = new AstContinueStmt(new Pos(contTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(contStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("FunCall", "ID", "OPEN_PAREN", "FunArgs", "CLOSE_PAREN"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken closeParenTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
                                 AstContinueStmt contStmt = new AstContinueStmt(new Pos(contTok));
 
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());

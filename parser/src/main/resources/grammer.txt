@@ -2,7 +2,7 @@ Start -> Prog $
 
 Prog -> Decls
 
-Decls -> Decl Decls
+Decls -> Decls Decl
 Decls ->
 
 Decl -> VarDec SEMI_COLON
@@ -21,7 +21,7 @@ TypeVal -> ID
 TypeVal -> OPEN_BRACE TypeFields CLOSE_BRACE
 TypeVal -> ARRAY OF TypeVal
 
-TypeFields -> ID COLON TypeVal COMMA TypeFields
+TypeFields -> TypeFields COMMA ID COLON TypeVal
 TypeFields -> ID COLON TypeVal
 
 FunDec -> FUNC ID OPEN_PAREN TypeFields CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
@@ -80,7 +80,7 @@ Primary
     -> NUM
     | STRING_LIT
     | Lvalue
-    | FunCallExp
+    | ID OPEN_PAREN FunArgs CLOSE_PAREN
     | NIL
     | IfExpr
     | IfElseExpr
@@ -91,8 +91,8 @@ Primary
     | FALSE
 
 
-RecordExpr -> TypeVal OPEN_BRACE FieldInit CLOSE_BRACE
-ArrayExpr -> TypeVal OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+RecordExpr -> NEW TypeVal OPEN_BRACE FieldInit CLOSE_BRACE
+ArrayExpr -> NEW TypeVal OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
 
 // currently empty records are erroneous
 
@@ -100,11 +100,11 @@ FieldInit
     ->ID ASSIGN Exp
     | ID ASSIGN Exp COMMA FieldInit
 
-Stmts -> Stmt Stmts
+Stmts -> Stmts Stmt
 Stmts ->
 
 Stmt -> Assign SEMI_COLON
-Stmt -> FunCallStmt SEMI_COLON
+Stmt -> FunCall SEMI_COLON
 Stmt -> IfElseStmt
 Stmt -> IfStmt
 Stmt -> While
@@ -120,7 +120,7 @@ Return -> RETURN Exp SEMI_COLON
 BreakStmt -> BREAK SEMI_COLON
 ContinueStmt -> CONTINUE SEMI_COLON
 
-FunCallStmt -> ID OPEN_PAREN FunArgs CLOSE_PAREN
+FunCall -> ID OPEN_PAREN FunArgs CLOSE_PAREN
 
 FunArgs ->
 FunArgs -> Exp ArgTail
@@ -140,12 +140,12 @@ Lvalue -> ID
 Lvalue -> Lvalue ACCESSOR ID
 Lvalue -> Lvalue OPEN_SQUARE Exp CLOSE_SQUARE
 
-IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
+IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp CLOSE_BRACE
 
 IfElseStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE ELSE OPEN_BRACE Stmts CLOSE_BRACE
 
 
-IfExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
+IfExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE
 
 IfStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
@@ -153,23 +153,27 @@ While -> WHILE OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
 For -> FOR OPEN_PAREN ForFirsts SEMI_COLON ForSeconds SEMI_COLON ForThirds CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE
 
-ForFirsts -> ForFirst COMMA ForFirsts
-ForFirsts -> ForFirst
+ForFirsts ->
+    | ForFirstList
 
-ForSeconds -> ForSecond COMMA ForSeconds
-ForSeconds -> ForSecond
+ForFirstList ->
+    ForFirst
+    | ForFirst COMMA ForFirstList
 
-ForThirds -> ForThird COMMA ForThirds
-ForThirds -> ForThird
+ForSeconds ->
+    | Exp
 
-ForFirst -> VarDecInit
-ForFirst -> Assign
+ForThirds ->
+    | ForThirdList
+
+ForThirdList ->
+    ForThird
+    | ForThird COMMA ForThirdList
+
 ForFirst ->
+    VarDecInit
+    | Assign
 
-ForSecond -> Exp
-ForSecond ->
-
-ForThird -> Assign
 ForThird ->
-
+    Assign
 

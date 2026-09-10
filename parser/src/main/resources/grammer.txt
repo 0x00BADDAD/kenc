@@ -37,7 +37,15 @@ LogicalOr
     | LogicalAnd
 
 LogicalAnd
-    -> LogicalAnd AND Equality
+    -> LogicalAnd AND Disjunction
+    | Disjunction
+
+Disjunction
+    -> Disjunction DIS Conjunction
+    | Conjunction
+
+Conjunction
+    -> Conjunction CON Equality
     | Equality
 
 Equality
@@ -47,8 +55,8 @@ Equality
 
 Rel
     -> Rel LESS_THAN Add
-    |  Rel LESS_EQUAL Add
     |  Rel GREATER_THAN Add
+    |  Rel LESS_EQUAL Add
     |  Rel GREATER_EQUAL Add
     |  Add
 
@@ -72,7 +80,7 @@ Primary
     -> NUM
     | STRING_LIT
     | Lvalue
-    | FunCall
+    | FunCallExp
     | NIL
     | IfExpr
     | IfElseExpr
@@ -83,24 +91,20 @@ Primary
     | FALSE
 
 
-RecordExpr -> ID OPEN_BRACE FieldInit CLOSE_BRACE
-ArrayExpr -> ID OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+RecordExpr -> TypeVal OPEN_BRACE FieldInit CLOSE_BRACE
+ArrayExpr -> TypeVal OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+
+// currently empty records are erroneous
 
 FieldInit
-    ->
-    | ID ASSIGN Exp FieldTail
-
-FieldTail
-    ->
-    | COMMA ID ASSIGN Exp FieldTail
-
+    ->ID ASSIGN Exp
+    | ID ASSIGN Exp COMMA FieldInit
 
 Stmts -> Stmt Stmts
 Stmts ->
 
-
 Stmt -> Assign SEMI_COLON
-Stmt -> FunCall SEMI_COLON
+Stmt -> FunCallStmt SEMI_COLON
 Stmt -> IfElseStmt
 Stmt -> IfStmt
 Stmt -> While
@@ -116,6 +120,15 @@ Return -> RETURN Exp SEMI_COLON
 BreakStmt -> BREAK SEMI_COLON
 ContinueStmt -> CONTINUE SEMI_COLON
 
+FunCallStmt -> ID OPEN_PAREN FunArgs CLOSE_PAREN
+
+FunArgs ->
+FunArgs -> Exp ArgTail
+
+ArgTail ->
+ArgTail -> COMMA Exp ArgTail
+
+
 Assign -> Lvalue ASSIGN Exp
 Assign -> Lvalue ACC_DIV Exp
 Assign -> Lvalue ACC_SUB Exp
@@ -127,7 +140,7 @@ Lvalue -> ID
 Lvalue -> Lvalue ACCESSOR ID
 Lvalue -> Lvalue OPEN_SQUARE Exp CLOSE_SQUARE
 
-IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
+IfElseExpr -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE ELSE OPEN_BRACE Stmts Exp SEMI_COLON CLOSE_BRACE
 
 IfElseStmt -> IF OPEN_PAREN Exp CLOSE_PAREN OPEN_BRACE Stmts CLOSE_BRACE ELSE OPEN_BRACE Stmts CLOSE_BRACE
 
@@ -158,13 +171,5 @@ ForSecond ->
 
 ForThird -> Assign
 ForThird ->
-
-FunCall -> ID OPEN_PAREN FunArgs CLOSE_PAREN
-
-FunArgs ->
-FunArgs -> Exp ArgTail
-
-ArgTail ->
-ArgTail -> COMMA Exp ArgTail
 
 

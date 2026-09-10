@@ -4,11 +4,15 @@ import space.unmei.ast.Pos;
 
 public class AstArrayType extends AstType{
 
-    private AstType arrTy;
+    private AstType arrEleTy;
 
-    public AstArrayType(Pos pos, AstType arrTy){
+    public AstArrayType(Pos pos, AstType arrEleTy){
         this.pos = pos;
-        this.arrTy = arrTy;
+        this.arrEleTy = arrEleTy;
+    }
+
+    public AstType getArrEleType(){
+        return this.arrEleTy;
     }
 
 

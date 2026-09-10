@@ -6,9 +6,9 @@ import space.unmei.ast.exps.AstExp;
 public class AstIfStmt extends AstStmt{
 
     private AstExp cond;
-    private List<AstStmt> thenStmts;
+    private AstStmts thenStmts;
 
-    public AstIfElseStmt(Pos pos, AstExp cond, List<AstStmt> thenStmts){
+    public AstIfElseStmt(Pos pos, AstExp cond, AstStmts thenStmts){
         this.pos = pos;
         this.cond = cond;
         this.thenStmts = thenStmts;

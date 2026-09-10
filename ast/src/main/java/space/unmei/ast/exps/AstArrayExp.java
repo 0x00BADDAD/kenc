@@ -5,14 +5,12 @@ import space.unmei.semant.Symbol;
 
 public class AstArrayExp extends AstExp{
 
-    private Symbol arrName;
     private AstExp arrSize;
     private AstExp arrInitVal;
 
-    public AstArrayExp(Pos pos, AstType ty, Symbol arrName, AstExp arrSize, AstExp arrInitVal){
+    public AstArrayExp(Pos pos, AstArrayType ty, AstExp arrSize, AstExp arrInitVal){
         this.ty = ty;
         this.pos = pos;
-        this.arrName = arrName;
         this.arrSize = arrSize;
         this.arrInitVal = arrInitVal;
     }

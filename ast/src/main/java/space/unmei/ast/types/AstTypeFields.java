@@ -5,6 +5,10 @@ public class AstTypeFields extends AstNode{
 
     private List<Pair<Symbol, AstType>> tyFields;
 
+    public AstTypeFields(Pos pos){
+        this.pos = pos;
+    }
+
     public AstTypeFields(Pos pos, List<Pair<Symbol, AstType>> tyFields){
         this.pos = pos;
         this.tyFields = tyFields;

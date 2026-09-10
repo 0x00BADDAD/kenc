@@ -2,12 +2,12 @@ package space.unmei.ast.exps;
 
 import space.unmei.ast.Pos;
 
-public class AstUnopExp extends AstExp{
+public class AstUnaryOpExp extends AstExp{
 
-    private UnaryOp op;
+    private AstUnaryOpType op;
     private AstExp right;
 
-    public AstUnopExp(Pos pos, AstType ty, UnaryOp op, AstExp right){
+    public AstUnaryOpExp(Pos pos, AstType ty, AstUnaryOpType op, AstExp right){
         this.ty = ty;
         this.pos = pos;
         this.op = op;

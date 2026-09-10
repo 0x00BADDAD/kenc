@@ -2,9 +2,9 @@ package space.unmei.ast.types.default_types;
 
 import space.unmei.ast.Pos;
 
-public class AstInt64Type extends AstType{
+public class AstNilType extends AstType{
 
-    public AstInt64Type(Pos pos){
+    public AstNilType(Pos pos){
         this.pos = pos;
     }
 }

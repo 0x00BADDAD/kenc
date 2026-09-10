@@ -52,7 +52,8 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "ForFirst",
             "ForSecond",
             "ForThird",
-            "FunCall",
+            "FunCallExp",
+            "FunCallStmt",
             "Args",
             "ArgTail"
         };
@@ -125,6 +126,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new LexToken("FOR", "for")
                 )
         );
+
         List<Pair<List<String>, BiConsumer<Deque<LR1State<AstNode, LexToken>>, Deque<Pair<AstNode, GramSymbol<LexToken>>>>> prodStrs =  new ArrayList<>(
                 List.of(
                     new Pair<>(
@@ -555,209 +557,1167 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("LogicalAnd", "LogicalAnd", "AND", "Disjunction"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> disSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken andTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> andSym = symStack.pop();
+                                AstBinopExp binExp = new AstBinopExp(new Pos(andTok), new AstBooleanType(new Pos(andTok)), disSym.first(), eqSym.first(), AstBinOpType.LOGICAL_AND);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("LogicalAnd", "Disjunction"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> disSym = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(disSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Disjunction", "Disjunction", "DIS", "Conjunction"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> conSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken disTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> disSym = symStack.pop();
+                                // type of the binExp will be decided based upon
+                                // types of the 2 input exps.
+                                AstType binExpType;
+                                if(!(disSym.first().getExpType() instanceof AstNilType)){
+                                    // so the first one is non-nil. take this type.
+                                    binExpType = disSym.first().getExpType();
+                                }else if(!(conSym.first().getExpType() instanceof AstNilType)){
+                                    binExpType = disSym.first().getExpType();
+                                }else{
+                                    binExpType = new AstNilType(new Pos(disTok));
+                                }
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(disTok), binExpType, disSym.first(), eqSym.first(), AstBinOpType.DIS);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Disjunction", "Conjunction"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> conSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(conSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Conjunction", "Conjunction", "CON", "Equality"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> eqSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken conTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> conSym = symStack.pop();
+                                // type of the binExp will be decided based upon
+                                // types of the 2 input exps.
+                                AstType binExpType;
+                                if(conSym.first().getExpType() instanceof AstNilType){
+                                    // so the first one is non-nil. take this type.
+                                    binExpType = new AstNilType(new Pos(conTok));
+                                }else if(eqSym.first().getExpType() instanceof AstNilType){
+                                    binExpType = new AstNilType(new Pos(conTok));
+                                }else{
+                                    binExpType = eqSym.first().getExpType();
+                                }
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(disTok), binExpType, disSym.first(), eqSym.first(), AstBinOpType.CON);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Conjunction", "Equality"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> eqSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(eqSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Equality", "Equality", "ISEQUAL", "Rel"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> relSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken eqTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> eqSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(eqTok), new AstBooleanType(new Pos(eqTok)), eqSym.first(), relSym.first(), AstBinOpType.EQUAL);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Equality", "Equality", "NOT_EQUAL", "Rel"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> relSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken neqTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> eqSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(neqTok), new AstBooleanType(new Pos(neqTok)), eqSym.first(), relSym.first(), AstBinOpType.NOT_EQUAL);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Equality", "Rel"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> relSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(relSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Rel", "Rel", "LESS_THAN", "Add"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken ltTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> relSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(ltTok), new AstBooleanType(new Pos(ltTok)), relSym.first(), addSym.first(), AstBinOpType.LESS_THAN);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Rel", "Rel", "GREATER_THAN", "Add"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken gtTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> relSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(gtTok), new AstBooleanType(new Pos(gtTok)), relSym.first(), addSym.first(), AstBinOpType.GREATER_THAN);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Rel", "Rel", "LESS_EQUAL", "Add"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken leTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> relSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(leTok), new AstBooleanType(new Pos(leTok)), relSym.first(), addSym.first(), AstBinOpType.LESS_EQUAL);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Rel", "Rel", "GREATER_EQUAL", "Add"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken geTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> relSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(geTok), new AstBooleanType(new Pos(geTok)), relSym.first(), addSym.first(), AstBinOpType.GREATER_EQUAL);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Rel", "Add"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(addSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Add", "Add", "PLUS", "Mul"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken plusTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(plusTok), new AstInt64Type(new Pos(plusTok)), addSym.first(), mulSym.first(), AstBinOpType.ADD);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Add", "Add", "MINUS", "Mul"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken minusTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> addSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(minusTok), new AstInt64Type(new Pos(minusTok)), addSym.first(), mulSym.first(), AstBinOpType.SUBTRACT);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Add", "Mul"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(mulSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Mul", "Mul", "MUL", "Unary"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken mulTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(mulTok), new AstInt64Type(new Pos(mulTok)), addSym.first(), mulSym.first(), AstBinOpType.MULTIPLY);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Mul", "Mul", "DIV", "Unary"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken divTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(divTok), new AstInt64Type(new Pos(divTok)), addSym.first(), mulSym.first(), AstBinOpType.DIVIDE);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Mul", "Mul", "MOD", "Unary"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken modTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> mulSym = symStack.pop();
+
+                                AstBinopExp binExp = new AstBinopExp(new Pos(modTok), new AstInt64Type(new Pos(modTok)), addSym.first(), mulSym.first(), AstBinOpType.MODULO);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(binExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Mul", "Unary"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(unarySym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Unary", "BOOL_NEGATION", "Unary"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+                                stateStack.pop();
+                                LexToken bnegTok = symStack.pop().second().getSymbolToken();
+                                AstUnaryOpExp unOpExp = new AstUnaryOpExp(new Pos(bnegTok), new AstBooleanType(new Pos(bnegTok)), AstUnaryOpType.BOOL_NEGATION, unarySym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(unOpExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Unary", "MINUS", "Unary"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexTok>> unarySym = symStack.pop();
+                                stateStack.pop();
+                                LexToken minusTok = symStack.pop().second().getSymbolToken();
+                                AstUnaryOpExp unOpExp = new AstUnaryOpExp(new Pos(minusTok), new AstInt64Type(new Pos(minusTok)), AstUnaryOpType.INT_NEGATION, unarySym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(unOpExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "NUM"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken numTok = symStack.pop().second().getSymbolToken();
+                                AstNumExp numExp = new AstNumExp(new Pos(numTok), new AstInt64Type(new Pos(numTok)), Integer.valueOf(numTok.getContent()), 64);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(numExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "STRING_LIT"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken strLit = symStack.pop().second().getSymbolToken();
+
+                                AstStringExp strExp = new AstStringExp(new Pos(strLit), new AstStringType(new Pos(strLit)), strLit.getContent());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(strExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "Lvalue"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(lvalSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "FunCallExp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstFuncallExp, GramSymbol<LexToken>> fnCallSym = symStack.pop();
+
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(fnCallSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "NIL"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken nilTok = symStack.pop().second().getSymbolToken();
+
+                                AstNilExp nilExp = new AstNilExp(new Pos(nilTok), new AstNilType(new Pos(nilTok)));
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(nilExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "IfExpr"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstIfExp, GramSymbol<LexToken>> ifSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ifSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "IfElseExpr"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstIfElseExp, GramSymbol<LexToken>> ifElseSym = symStack.pop();
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ifElseSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "OPEN_PAREN", "Exp", "CLOSE_PAREN"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> primExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(primExpSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Primary", "RecordExpr"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstRecordExp, GramSymbol<LexToken>> recExprSym = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(recExprSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "ArrayExpr"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstArrayExp, GramSymbol<LexToken>> arrExprSym = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(arrExprSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "TRUE"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken trueTok = symStack.pop().second().getSymbolToken();
+                                AstBooleanExp trueExpr = new AstBooleanExp(new Pos(trueTok),new AstBooleanType(new Pos(trueTok)), true);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(trueExpr, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Primary", "FALSE"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken falseTok = symStack.pop().second().getSymbolToken();
+                                AstBooleanExp falseExpr = new AstBooleanExp(new Pos(falseTok),new AstBooleanType(new Pos(falseTok)), false);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(falseExpr, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("RecordExpr", "TypeVal", "OPEN_BRACE", "FieldInit", "CLOSE_BRACE"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstFieldInit, GramSymbol<LexToken>> fieldInit = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstType, GramSymbol<LexToken>> recTypeSym = symStack.pop();
+
+                                AstRecordExp recExp = new AstRecordExp(new Pos(oParen), recTypeSym.first(), fieldInit.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(recExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("ArrayExpr", "TypeVal", "OPEN_SQUARE", "Exp", "CLOSE_SQUARE", "OF", "Exp"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> arrInitVal = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken ofTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> arrSz = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstType, GramSymbol<LexToken>> arrTySym = symStack.pop();
+
+                                AstArrayExp arrExp = new AstArrayExp(new Pos(oParen), arrTySym.first(), arrSz.first(), arrInitVal.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(arrExp, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("FieldInit", "ID", "ASSIGN", "Exp"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken assgnTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken idTok = symStack.pop().second().getSymbolToken();
+                                AstFieldInit fieldInit = new AstFieldInit(new Pos(idTok));
+                                fieldInit.addFieldInit(new Symbol(idTok.getContent(), idTok), expSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(fieldInit, this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("FieldInit", "ID", "ASSIGN", "Exp", "COMMA", "FieldInit"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstNode, GramSymbol<LexToken>> fInitSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken comTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken assgnTok =  symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken idTok = symStack.pop().second().getSymbolToken();
+
+                                fInitSym.first().addFieldInit(new Symbol(idTok.getContent(), idTok), expSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(fInitSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Stmts","Stmt", "Stmts"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> stmtsSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstStmt, GramSymbol<LexToken>> stmtSym = symStack.pop();
+
+                                stmtsSym.first().pos = stmtSym.first().pos;
+
+                                stmtsSym.first().addStmt(stmtSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(stmtsSym.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmts"),
                             (stateStack, symStack)->{
+                                LexToken dummyTok = new LexToken("#", "#");
+                                AstStmts stmts = new AstStmts(new Pos(dummyTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(stmts, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Stmt", "Assign", "SEMI_COLON"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstAssignStmt, GramSymbol<LexToken>> assgnStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assgnStmt.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "FunCallStmt", "SEMI_COLON"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstFuncallStmt, GramSymbol<LexToken>> fnCallStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(fnCallStmt.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "IfElseStmt"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstIfElseStmt, GramSymbol<LexToken>> ieStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ieStmt.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "IfStmt"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstIfStmt, GramSymbol<LexToken>> ifStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ifStmt.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "While"),
                             (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstWhileStmt, GramSymbol<LexToken>> whileStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(whileStmt.first(), this.getLhs()));
 
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "For"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                Pair<AstForStmt, GramSymbol<LexToken>> forStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forStmt.first(), this.getLhs()));
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "VarDec", "SEMI_COLON"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstVarDecStmt, GramSymbol<LexToken>> varDecStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(varDecStmt.first(), this.getLhs()));
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "VarDecInit", "SEMI_COLON"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstVarDecInitStmt, GramSymbol<LexToken>> varDecInitStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(varDecInitStmt.first(), this.getLhs()));
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "TypeDec", "SEMI_COLON"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstTypeDecStmt, GramSymbol<LexToken>> typeDecStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(typeDecStmt.first(), this.getLhs()));
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "BreakStmt"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                Pair<AstBreakStmt, GramSymbol<LexToken>> breakStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(breakStmt.first(), this.getLhs()));
                             }
                             ),
                     new Pair<>(
-                            List.of(),
+                            List.of("Stmt", "ContinueStmt"),
                             (stateStack, symStack)->{
-
+                                stateStack.pop();
+                                Pair<AstContinueStmt, GramSymbol<LexToken>> contStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(contStmt.first(), this.getLhs()));
                             }
-                            )
+                            ),
+                    new Pair<>(
+                            List.of("Stmt", "Return"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstReturnStmt, GramSymbol<LexToken>> retStmt = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(retStmt.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Return", "RETURN", "Exp", "SEMI_COLON"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken retTok = symStack.pop().second().getSymbolToken();
+                                AstReturnStmt retStmt = new AstReturnStmt(new Pos(retTok), expSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(retStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("BreakStmt", "BREAK", "SEMI_COLON"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken breakTok = symStack.pop().second().getSymbolToken();
+                                AstBreakStmt breakStmt = new AstBreakStmt(new Pos(breakTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(breakStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ContinueStmt", "CONTINUE", "SEMI_COLON"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken contTok = symStack.pop().second().getSymbolToken();
+                                AstContinueStmt contStmt = new AstContinueStmt(new Pos(contTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(contStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ASSIGN", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ASSIGN);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ACC_DIV", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ACC_DIV);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ACC_SUB", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ACC_SUB);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ACC_MUL", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ACC_MUL);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ACC_MOD", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ACC_MOD);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Assign", "Lvalue", "ACC_PLUS", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken assignTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+
+                                AstAssignStmt assignStmt = new AstAssignStmt(new Pos(assignTok), lvalSym.first(), expSym.first(), AstAssignOpType.ACC_PLUS);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(assignStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Lvalue", "ID"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken idTok = symStack.pop().second().getSymbolToken();
+                                // IMP: the type of lvalue for simpleVar must be filled at semantic phase
+                                AstLvalueExp lvalExp = new AstVarExp(new Pos(idTok), null, new Symbol(idTok.getContent(), idTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(lvalExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Lvalue", "Lvalue", "ACCESSOR", "ID"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken idTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken accessorTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+                                // ty field of AstAccessExp to be filled by semantic phase
+                                AstAccessExp accessExp = new AstAccessExp(new Pos(accessorTok), null, lvalSym.first(), new Symbol(idTok.getContent(), idTok));
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(accessExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Lvalue", "Lvalue", "OPEN_SQUARE", "Exp", "CLOSE_SQUARE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cSquare = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> idxExpSym = symStack.pop();
+
+                                stateStack.pop();
+                                LexToken oSquare = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
+                                // ty field of AstAccessExp to be filled by semantic phase
+                                AstSubExp subscriptExp = new AstSubExp(new Pos(oSquare), null, lvalSym.first(), idxExpSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(subscriptExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("IfElseExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "CLOSE_BRACE", "ELSE", "OPEN_BRACE", "Stmts", "Exp", "SEMI_COLON", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken colTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> elseExpSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> elseStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken elseTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken colTok1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> thenExpSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> thenStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> condExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken ifTok = symStack.pop().second().getSymbolToken();
+                                // assuming that type of thenExp and elseExp is same
+                                // this is something to be tested at semantic pass
+                                AstType resType = thenExpSym.first().getExpType();
+
+                                AstIfElseExp ieExp = new AstIfElseExp(condExpSym.first().pos, resType, thenExpSym.first(), elseExpSym.first(), thenStmtsSym.first(), elseStmtsSym.first());
+
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ieExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("IfElseStmt", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "CLOSE_BRACE", "ELSE", "OPEN_BRACE", "Stmts", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> elseStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken elseTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> thenStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> condExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken ifTok = symStack.pop().second().getSymbolToken();
+
+                                AstIfElseStmt ieStmt = new AstIfElseStmt(condExpSym.first().pos, thenExpSym.first(), thenStmtsSym.first(), elseStmtsSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ieStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("IfExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "SEMI_COLON", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken semiTok = symStack.pop().second().getSymbolToken();
+
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> thenExpSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> thenStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> condExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken ifTok = symStack.pop().second().getSymbolToken();
+
+                                AstIfExp ifExp = new AstIfExp(condExpSym.first().pos, thenExpSym.first().getExpType(), condExpSym.first(), thenExpSym.first(), thenStmtsSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ifExp, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("IfStmt", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> thenStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> condExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken ifTok = symStack.pop().second().getSymbolToken();
+
+                                AstIfStmt ifStmt = new AstIfStmt(condExpSym.first().pos, condExpSym.first(), thenStmtsSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(ifStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("While", "WHILE", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> whileStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> condExpSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken whileTok = symStack.pop().second().getSymbolToken();
+
+                                AstWhileStmt whileStmt = new AstWhileStmt(condExpSym.first().pos, condExpSym.first(), whileStmtsSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(whileStmt, this.getLhs()));
+                            }
+                            ),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     )
                 );
         this.setup_(nonTermSyms, termSyms, prodStrs);

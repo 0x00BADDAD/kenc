@@ -23,4 +23,8 @@ public class Symbol{
     public LexToken getToken(){
         return this.tok;
     }
+
+    public String getName(){
+        return this.name;
+    }
 }

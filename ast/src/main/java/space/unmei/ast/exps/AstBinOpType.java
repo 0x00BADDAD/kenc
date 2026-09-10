@@ -18,6 +18,10 @@ public enum AstBinOpType {
 
     LOGICAL_AND,    // and
     LOGICAL_OR,     // or
-    BOOL_NEGATION   // !
+    BOOL_NEGATION,   // !
+
+    DIS, // |
+    CON  // &
+
 
 }

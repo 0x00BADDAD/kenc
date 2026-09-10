@@ -8,7 +8,7 @@ public class AstFuncallExp extends AstExp{
     private Symbol funName;
     private List<AstExp> argVals;
 
-    public AstFuncallExp(Pos pos, AstType ty, Symbol funName, List<AstExp> argVals){this.pos = pos; this.funName = funName; this.argVals = argVals; this.ty = ty;}
+    public AstFuncallExp(Pos pos, AstType retTy, Symbol funName, List<AstExp> argVals){this.pos = pos; this.funName = funName; this.argVals = argVals; this.ty = retTy;}
 
 }
 

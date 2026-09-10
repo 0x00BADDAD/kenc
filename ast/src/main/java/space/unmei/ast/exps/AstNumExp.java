@@ -6,7 +6,7 @@ import space.unmei.ast.Pos;
 public class AstNumExp extends AstExp{
 
     private Integer numVal;
-    private Integer width;
+    private Integer width; // bit-width of integer
 
     public AstNumExp(Pos pos, AstType ty, Integer numVal, Integer width){
         this.ty = ty;
@@ -14,7 +14,6 @@ public class AstNumExp extends AstExp{
         this.numVal = numVal;
         this.width = width;
     }
-
 }
 
 

@@ -12,4 +12,8 @@ public class AstExp extends AstNode{
         this.ty = t;
     }
 
+    public AstType getExpType(){
+        return this.ty;
+    }
+
 }

@@ -6,13 +6,15 @@ import space.unmei.ast.Pos;
 public class AstIfExp extends AstExp{
 
     private AstExp cond;
-    private AstExp then;
+    private AstExp thenExp;
+    private AstStmts thenStmts;
 
-    public AstIfElseExp(Pos pos, AstType ty, AstExp cond, AstExp then){
+    public AstIfElseExp(Pos pos, AstType ty, AstExp cond, AstExp thenExp, AstStmts thenStmts){
         this.ty = ty;
         this.pos = pos;
         this.cond = cond;
-        this.then = then;
+        this.thenExp = thenExp;
+        this.thenStmts = thenStmts;
     }
 
 

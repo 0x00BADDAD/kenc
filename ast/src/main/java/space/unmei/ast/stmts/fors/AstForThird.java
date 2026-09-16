@@ -10,8 +10,6 @@ public class AstForThird extends AstNode{
 
     public AstForThird(Pos pos, AstAssignStmt s){this.pos = pos; this.assignStmt = s;}
 
-    public boolean isEmpty(){return this.assignStmt == null;}
-
 
 }
 

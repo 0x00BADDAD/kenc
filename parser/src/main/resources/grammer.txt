@@ -159,6 +159,10 @@ ForFirstList ->
     ForFirst
     | ForFirst COMMA ForFirstList
 
+ForFirst ->
+    VarDecInit
+    | Assign
+
 ForSeconds ->
     | Exp
 
@@ -168,10 +172,6 @@ ForThirds ->
 ForThirdList ->
     ForThird
     | ForThird COMMA ForThirdList
-
-ForFirst ->
-    VarDecInit
-    | Assign
 
 ForThird ->
     Assign

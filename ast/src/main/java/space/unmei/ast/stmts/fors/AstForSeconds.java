@@ -5,23 +5,15 @@ import space.unmei.ast.Pos;
 
 public class AstForSeconds extends AstNode{
 
-    private List<AstForSecond> flist;
+    private AstExp secondExp;
 
-    public AstForSeconds(Pos pos, List<AstForSecond> l){
+    public AstForSeconds(Pos pos, AstExp secondExp){
         this.pos = pos;
-        this.flist = l;
+        this.secondExp = secondExp;
     }
 
     public boolean isEmpty(){
-
-        boolean ans = this.flist.size() == 0;
-
-        boolean ans_ = true;
-        for(AstForSecond x: this.flist){
-            ans_ &= x.isEmpty();
-        }
-        return (ans | ans_);
-
+        return this.secondExp == null;
     }
 }
 

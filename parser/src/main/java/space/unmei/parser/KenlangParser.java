@@ -1788,27 +1788,202 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 symStack.push(new Pair<>(whileStmt, this.getLhs()));
                             }
                             ),
+                    new Pair<>(
+                            List.of("For", "FOR", "OPEN_PAREN", "ForFirsts", "SEMI_COLON", "ForSeconds", "SEMI_COLON", "ForThirds", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "CLOSE_BRACE"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken cBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> forStmtsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oBrace = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken cParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstForThirds, GramSymbol<LexToken>> forThirdsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken semiTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstForSeconds, GramSymbol<LexToken>> forSecondsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken semiTok1 = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstForFirsts, GramSymbol<LexToken>> forFirstsSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken oParen = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                LexToken forTok = symStack.pop().second().getSymbolToken();
 
+                                AstForStmt forStmt = new AstForStmt(new Pos(forTok), forFirstsSym.first(), forSecondsSym.first(), forThirdsSym.first());
 
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forStmt, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirsts"),
+                            (stateStack, symStack)->{
+                                AstForFirsts forFirsts = new AstForFirsts(null, null);
+                                if(symStack.size() > 0){
+                                    forFirsts.pos = symStack.peek().first().pos;
+                                }
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirsts, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirsts", "ForFirstList"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForFirstList, GramSymbol<LexToken>> firstListSym = symStack.pop();
 
+                                AstForFirsts forFirsts = new AstForFirsts(firstListSym.first().pos, firstListSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirsts, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirstList", "ForFirst"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForFirst, GramSymbol<LexToken>> firstSym = symStack.pop();
 
+                                AstForFirstList forFirstList = new AstForFirstList(firstSym.first().pos, firstSym.first(), null);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirstList, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirstList", "ForFirst", "COMMA", "ForFirstList"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForFirstList, GramSymbol<LexToken>> firstListSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken commaTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstForFirst, GramSymbol<LexToken>> firstSym = symStack.pop();
 
+                                AstForFirstList forFirstList = new AstForFirstList(firstSym.first().pos, firstSym.first(), firstListSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirstList, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirst", "VarDecInit"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstVarDecInitStmt, GramSymbol<LexToken>> varDecInitSym = symStack.pop();
 
+                                AstForFirst forFirst = new AstForFirst(varDecInitSym.first().pos, varDecInitSym.first(), null);
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirst, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForFirst", "Assign"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstAssignStmt, GramSymbol<LexToken>> assignSym = symStack.pop();
 
+                                AstForFirst forFirst = new AstForFirst(assignSym.first().pos, null, assignSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forFirst, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForSeconds"),
+                            (stateStack, symStack)->{
+                                AstForSeconds forSeconds = new AstForSeconds(null, null);
+                                if(symStack.size() > 0){
+                                    forSeconds.pos = symStack.peek().first().pos;
+                                }
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forSeconds, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForSeconds", "Exp"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+                                AstForSeconds forSeconds = new AstForSeconds(expSym.pos, expSym.first());
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forSeconds, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThirds"),
+                            (stateStack, symStack)->{
+                                AstForThirds forThirds = new AstForThirds(null, null);
+                                if(symStack.size() > 0){
+                                    forThirds.pos = symStack.peek().first().pos;
+                                }
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThirds, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThirds", "ForThirdList"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForThirdList, GramSymbol<LexToken>> thirdListSym = symStack.pop();
+                                AstForThirds forThirds = new AstForThirds(thirdListSym.first().pos, thirdListSym.first());
 
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThirds, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThirdList", "ForThird"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForThird, GramSymbol<LexToken>> thirdSym = symStack.pop();
+                                AstForThirdList forThirdList = new AstForThirdList(thirdSym.first().pos, thirdSym.first(), null);
 
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThirdList, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThirdList", "ForThird", "COMMA", "ForThirdList"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstForThirdList, GramSymbol<LexToken>> thirdListSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken commaTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstForThird, GramSymbol<LexToken>> thirdSym = symStack.pop();
+                                AstForThirdList forThirdList = new AstForThirdList(thirdSym.first().pos, thirdSym.first(), thirdListSym.first());
 
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThirdList, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThird", "Assign"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstAssignStmt, GramSymbol<LexToken>> assignSym = symStack.pop();
+                                AstForThird forThird = new AstForThird(assignSym.first().pos, assignSym.first());
 
-
-
-
-
-
-
-
-
-
-
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThird, this.getLhs()));
+                            }
+                            )
                     )
                 );
         this.setup_(nonTermSyms, termSyms, prodStrs);

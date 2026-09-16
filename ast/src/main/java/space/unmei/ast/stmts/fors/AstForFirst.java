@@ -15,5 +15,4 @@ public class AstForFirst extends AstNode{
         this.varDecInit = s1;
         this.assignStmt = s2;
     }
-    public boolean isEmpty(){return this.varDecInit == null && this.assignStmt == null;}
 }

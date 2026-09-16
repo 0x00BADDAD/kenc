@@ -15,6 +15,7 @@ FUNC: func
 NIL: nil
 TRUE: true
 FALSE: false
+NEW: new
 
 // punctuations
 OPEN_BRACE: {

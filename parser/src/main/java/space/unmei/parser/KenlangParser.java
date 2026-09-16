@@ -23,14 +23,14 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "TypeDec",
             "TypeVal",
             "TypeFields",
-            "TypeFields\'",
             "FunDec",
-            "Return",
             "Stmts",
             "Stmt",
             "Exp",
             "LogicalOr",
             "LogicalAnd",
+            "Disjunction",
+            "Conjunction",
             "Equality",
             "Rel",
             "Add",
@@ -38,7 +38,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "Unary",
             "Primary",
             "FieldInit",
-            "FieldTail",
+            "Return",
             "BreakStmt",
             "ContinueStmt",
             "Assign",
@@ -49,12 +49,18 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "IfStmt",
             "For",
             "While",
+            "ForFirsts",
+            "ForFirstList",
             "ForFirst",
-            "ForSecond",
+            "ForSeconds",
+            "ForThirds",
+            "ForThirdList",
             "ForThird",
             "FunCall",
-            "Args",
-            "ArgTail"
+            "FunArgs",
+            "ArgTail",
+            "RecordExpr",
+            "ArrayExpr"
         };
 
         List<LexToken> termSyms = new ArrayList<>(
@@ -82,13 +88,18 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
 
                     new LexToken("RETURN", "return"),
 
-                    new LexToken("OR", "or"),
-                    new LexToken("AND", "and"),
+                    new LexToken("NEW", "new"),
+
+                    new LexToken("OR", "||"),
+                    new LexToken("AND", "&&"),
 
                     new LexToken("ISEQUAL", "=="),
                     new LexToken("NOT_EQUAL", "!="),
                     new LexToken("LESS_THAN", "<"),
                     new LexToken("GREATER_THAN", ">"),
+
+                    new LexToken("CON", "&"),
+                    new LexToken("DIS", "|"),
 
                     new LexToken("PLUS", "+"),
                     new LexToken("MINUS", "-"),
@@ -158,20 +169,24 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                         }
                         ),
                     new Pair<>(
-                        List.of("Decls", "Decl", "Decls"),
+                        List.of("Decls", "Decls", "Decl"),
                         (stateStack, symStack)->{
                             stateStack.pop();
-                            Pair<AstNode, GramSymbol<LexToken>> declsSym = symStack.pop();
+                            Pair<AstDecl, GramSymbol<LexToken>> declSym = symStack.pop();
+
                             stateStack.pop();
-                            Pair<AstNode, GramSymbol<LexToken>> declSym = symStack.pop();
-                            AstProg prog = declsSym.first();
+                            Pair<AstDecls, GramSymbol<LexToken>> declsSym = symStack.pop();
+                            AstDecls decls = declsSym.first();
                             AstDecl decl = declSym.first();
-                            prog.addDecl(decl);
-                            prog.pos = decl.pos;
+                            decls.addDecl(decl);
+
+                            if(decls.pos == null){
+                                decls.pos = decl.pos;
+                            }
 
                             Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
                             stateStack.push(gotoAct.state());
-                            symStack.push(new Pair<>(prog, this.getLhs()));
+                            symStack.push(new Pair<>(decls, this.getLhs()));
                         }
                         ),
                     new Pair<>(
@@ -179,7 +194,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             (stateStack, symStack)->{
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
                                 stateStack.push(gotoAct.state());
-                                symStack.push(new Pair<>(new AstProg(null, new ArrayList<>()), this.getLhs()));
+                                symStack.push(new Pair<>(new AstDecls(null, new ArrayList<>()), this.getLhs()));
                             }
                             ),
                     new Pair<>(
@@ -407,20 +422,22 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("TypeFields", "ID", "COLON", "TypeVal", "COMMA", "TypeFields"),
+                            List.of("TypeFields", "TypeFields", "COMMA", "ID", "COLON", "TypeVal"),
                             (stateStack, symStack)->{
-                                stateStack.pop();
-                                Pair<AstTypeFields, GramSymbol<LexToken>> tyFieldsSym = symStack.pop();
-                                AstTypeFields currTyFields = tyFieldsSym.first();
-
-                                stateStack.pop(); symStack.pop();
-
                                 stateStack.pop();
                                 Pair<AstType, GramSymbol<LexToken>> tyValSym = symStack.pop();
                                 stateStack.pop(); symStack.pop();
 
                                 stateStack.pop();
                                 Pair<AstNode, GramSymbol<LexToken>> idSym = symStack.pop();
+
+                                stateStack.pop(); symStack.pop();
+
+                                stateStack.pop();
+                                Pair<AstTypeFields, GramSymbol<LexToken>> tyFieldsSym = symStack.pop();
+                                AstTypeFields currTyFields = tyFieldsSym.first();
+
+
                                 LexToken idTok = idSym.second().getSymbolToken();
 
                                 currTyFields.addTyField(new Symbol(idTok.getContent(), idTok), tyValSym.first());
@@ -941,6 +958,16 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
+                            List.of("Unary", "Primary"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> primSym = symStack.pop();
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(primSym.first(), this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
                             List.of("Primary", "NUM"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
@@ -978,7 +1005,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("Primary", "FunCall"),
+                            List.of("Primary", "ID", "OPEN_PAREN", "FunArgs", "CLOSE_PAREN"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 Pair<AstFuncallExp, GramSymbol<LexToken>> fnCallSym = symStack.pop();
@@ -1088,7 +1115,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("RecordExpr", "TypeVal", "OPEN_BRACE", "FieldInit", "CLOSE_BRACE"),
+                            List.of("RecordExpr", "NEW", "TypeVal", "OPEN_BRACE", "FieldInit", "CLOSE_BRACE"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 LexToken cParen = symStack.pop().second().getSymbolToken();
@@ -1098,8 +1125,10 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 LexToken oParen = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 Pair<AstType, GramSymbol<LexToken>> recTypeSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken newTok = symStack.pop().second().getSymbolToken();
 
-                                AstRecordExp recExp = new AstRecordExp(new Pos(oParen), recTypeSym.first(), fieldInit.first());
+                                AstRecordExp recExp = new AstRecordExp(new Pos(newTok), recTypeSym.first(), fieldInit.first());
 
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
                                 stateStack.push(gotoAct.state());
@@ -1108,7 +1137,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("ArrayExpr", "TypeVal", "OPEN_SQUARE", "Exp", "CLOSE_SQUARE", "OF", "Exp"),
+                            List.of("ArrayExpr","NEW", "TypeVal", "OPEN_SQUARE", "Exp", "CLOSE_SQUARE", "OF", "Exp"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 Pair<AstExp, GramSymbol<LexToken>> arrInitVal = symStack.pop();
@@ -1123,6 +1152,8 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 LexToken oParen = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 Pair<AstType, GramSymbol<LexToken>> arrTySym = symStack.pop();
+                                stateStack.pop();
+                                LexToken newTok = symStack.pop().second().getSymbolToken();
 
                                 AstArrayExp arrExp = new AstArrayExp(new Pos(oParen), arrTySym.first(), arrSz.first(), arrInitVal.first());
 
@@ -1170,14 +1201,16 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("Stmts","Stmt", "Stmts"),
+                            List.of("Stmts","Stmts", "Stmt"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
-                                Pair<AstStmts, GramSymbol<LexToken>> stmtsSym = symStack.pop();
-                                stateStack.pop();
                                 Pair<AstStmt, GramSymbol<LexToken>> stmtSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstStmts, GramSymbol<LexToken>> stmtsSym = symStack.pop();
 
-                                stmtsSym.first().pos = stmtSym.first().pos;
+                                if(stmtsSym.first().pos == null){
+                                    stmtsSym.first().pos = stmtSym.first().pos;
+                                }
 
                                 stmtsSym.first().addStmt(stmtSym.first());
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
@@ -1189,8 +1222,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new Pair<>(
                             List.of("Stmts"),
                             (stateStack, symStack)->{
-                                LexToken dummyTok = new LexToken("#", "#");
-                                AstStmts stmts = new AstStmts(new Pos(dummyTok));
+                                AstStmts stmts = new AstStmts(null);
 
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
                                 stateStack.push(gotoAct.state());
@@ -1393,6 +1425,58 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
+                            List.of("FunArgs"),
+                            (stateStack, symStack)->{
+                                AstFunArgs funargs = new AstFunArgs(null, true, null, null);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(funargs, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("FunArgs", "Exp", "ArgTail"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstArgTail, GramSymbol<LexToken>> argTailSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+
+                                AstFunArgs funargs = new AstFunArgs(expSym.first().pos, false, expSym.first(), argTailSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(funargs, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ArgTail"),
+                            (stateStack, symStack)->{
+                                AstArgTail argtail = new AstArgTail(null, true, null, null);
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(argtail, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ArgTail", "COMMA", "Exp", "ArgTail"),
+                            (stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstArgTail, GramSymbol<LexToken>> argTailSym = symStack.pop();
+                                stateStack.pop();
+                                Pair<AstExp, GramSymbol<LexToken>> expSym = symStack.pop();
+                                stateStack.pop();
+                                LexToken commaTok = symStack.pop().second().getSymbolToken();
+
+                                AstArgTail argtail = new AstArgTail(new Pos(commaTok), false, expSym.first(), argTailSym.first());
+
+                                Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(argtail, this.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
                             List.of("Assign", "Lvalue", "ASSIGN", "Exp"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
@@ -1542,7 +1626,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 LexToken oSquare = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = symStack.pop();
-                                // ty field of AstAccessExp to be filled by semantic phase
+                                // ty field of AstSubExp to be filled by semantic phase
                                 AstSubExp subscriptExp = new AstSubExp(new Pos(oSquare), null, lvalSym.first(), idxExpSym.first());
 
                                 Action.shift gotoAct = stateStack.peek().getAction(this.getLhs());
@@ -1551,12 +1635,10 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("IfElseExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "CLOSE_BRACE", "ELSE", "OPEN_BRACE", "Stmts", "Exp", "SEMI_COLON", "CLOSE_BRACE"),
+                            List.of("IfElseExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "CLOSE_BRACE", "ELSE", "OPEN_BRACE", "Stmts", "Exp", "CLOSE_BRACE"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 LexToken cBrace = symStack.pop().second().getSymbolToken();
-                                stateStack.pop();
-                                LexToken colTok = symStack.pop().second().getSymbolToken();
 
                                 stateStack.pop();
                                 Pair<AstExp, GramSymbol<LexToken>> elseExpSym = symStack.pop();
@@ -1568,8 +1650,6 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 LexToken elseTok = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 LexToken cBrace1 = symStack.pop().second().getSymbolToken();
-                                stateStack.pop();
-                                LexToken colTok1 = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
                                 Pair<AstExp, GramSymbol<LexToken>> thenExpSym = symStack.pop();
                                 stateStack.pop();
@@ -1631,12 +1711,10 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             }
                             ),
                     new Pair<>(
-                            List.of("IfExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "SEMI_COLON", "CLOSE_BRACE"),
+                            List.of("IfExpr", "IF", "OPEN_PAREN", "Exp", "CLOSE_PAREN", "OPEN_BRACE", "Stmts", "Exp", "CLOSE_BRACE"),
                             (stateStack, symStack)->{
                                 stateStack.pop();
                                 LexToken cBrace = symStack.pop().second().getSymbolToken();
-                                stateStack.pop();
-                                LexToken semiTok = symStack.pop().second().getSymbolToken();
 
                                 stateStack.pop();
                                 Pair<AstExp, GramSymbol<LexToken>> thenExpSym = symStack.pop();

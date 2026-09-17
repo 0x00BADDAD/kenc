@@ -1,16 +1,22 @@
 package space.unmei.ast.exps.record_exp;
 
+import space.unmei.ast.types.*;
+import java.util.*;
+import space.unmei.ast.exps.*;
+import space.unmei.ast.exps.lvalue.*;
+import space.unmei.ast.*;
+import space.unmei.semant.Symbol;
 
 public class AstFieldInit extends AstNode{
     private List<Pair<Symbol, AstExp>> fieldInitList = new ArrayList<>();
 
     public AstFieldInit(Pos pos, List<Pair<Symbol, AstExp>> l){
-        this.pos = pos;
+        super(pos);
         this.fieldInitList = l;
     }
 
     public AstFieldInit(Pos pos){
-        this.pos = pos;
+        super(pos);
     }
 
     public void addFieldInit(Symbol f, AstExp v){

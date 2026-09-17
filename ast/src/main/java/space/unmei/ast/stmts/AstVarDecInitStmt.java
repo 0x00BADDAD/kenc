@@ -4,18 +4,16 @@ import space.unmei.ast.Pos;
 import space.unmei.ast.exps.AstExp;
 import space.unmei.ast.types.AstType;
 import space.unmei.semant.Symbol;
+import space.unmei.ast.*;
+import space.unmei.ast.nodes.*;
 
 public class AstVarDecInitStmt extends AstStmt{
 
-    private Symbol varName;
-    private AstType varTy;
-    private AstExp initVal;
+    private AstVarDecInit varDecInit;
 
-    public AstVarDecInitStmt(Pos pos, Symbol varName, AstType varTy, AstExp initVal){
-        this.pos = pos;
-        this.varName = varName;
-        this.varTy = varTy;
-        this.initVal = initVal;
+    public AstVarDecInitStmt(Pos pos, AstVarDecInit varDecInit){
+        super(pos);
+        this.varDecInit = varDecInit;
     }
 }
 

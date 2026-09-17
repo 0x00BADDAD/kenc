@@ -5,10 +5,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import space.unmei.ast.AstNode;
+import space.unmei.lexer.LexToken;
 
 // T -> Token Type
-public class GramSymbol<T>{
+public class GramSymbol<T extends LexToken>{
 
     private boolean isNonTerm;
     private T token = null; // non-null when the Symbol is terminal
@@ -105,7 +105,7 @@ public class GramSymbol<T>{
         if(this.isNonTerm){
             return "| " + this.value + " |";
         }
-        return "| " + this.token.name() + " |";
+        return "| " + this.token.getName() + " |";
     }
 }
 

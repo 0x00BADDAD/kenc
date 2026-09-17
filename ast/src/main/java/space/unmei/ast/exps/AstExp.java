@@ -1,12 +1,14 @@
 package space.unmei.ast.exps;
 
+import space.unmei.ast.types.*;
+import space.unmei.ast.*;
 import space.unmei.ast.Pos;
 
 public class AstExp extends AstNode{
 
-    private AstType ty;
+    protected AstType ty;
 
-    public AstExp(Pos pos, AstType ty){this.pos = pos; this.ty = ty;}
+    public AstExp(Pos pos, AstType ty){super(pos); this.ty = ty;}
 
     public void setExpType(AstType t){
         this.ty = t;

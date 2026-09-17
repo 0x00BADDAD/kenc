@@ -1,5 +1,6 @@
 package space.unmei.semant;
 
+import space.unmei.lexer.LexToken;
 
 public class Symbol{
 

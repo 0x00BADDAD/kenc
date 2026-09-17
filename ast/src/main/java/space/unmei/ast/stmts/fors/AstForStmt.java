@@ -1,5 +1,7 @@
 package space.unmei.ast.stmts.fors;
 
+import space.unmei.ast.*;
+import space.unmei.ast.stmts.*;
 import space.unmei.ast.Pos;
 import space.unmei.ast.stmts.fors.AstForFirsts;
 import space.unmei.ast.stmts.fors.AstForSeconds;
@@ -7,12 +9,12 @@ import space.unmei.ast.stmts.fors.AstForThirds;
 
 public class AstForStmt extends AstStmt{
 
-    private AstForFrists firsts;
+    private AstForFirsts firsts;
     private AstForSeconds seconds;
     private AstForThirds thirds;
 
     public AstForStmt(Pos pos, AstForFirsts firsts, AstForSeconds seconds, AstForThirds thirds){
-        this.pos = pos;
+        super(pos);
         this.firsts = firsts;
         this.seconds = seconds;
         this.thirds = thirds;

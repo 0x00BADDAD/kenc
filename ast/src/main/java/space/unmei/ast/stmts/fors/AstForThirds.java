@@ -1,5 +1,7 @@
 package space.unmei.ast.stmts.fors;
 
+import space.unmei.ast.*;
+
 import space.unmei.ast.Pos;
 
 public class AstForThirds extends AstNode{
@@ -7,7 +9,7 @@ public class AstForThirds extends AstNode{
     private AstForThirdList list;
 
     public AstForThirds(Pos pos, AstForThirdList list){
-        this.pos = pos;
+        super(pos);
         this.list = list;
     }
 

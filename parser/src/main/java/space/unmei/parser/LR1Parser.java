@@ -1,18 +1,33 @@
 package space.unmei.parser;
 
+import space.unmei.ast.*;
+import space.unmei.lexer.LexToken;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+
+
 // this class expects tokens to be of type LexToken
 // T -> class of AST Node returned by gram prod reduction
 // U -> LexToken class
-public abstract class LR1Parser<T, U>{
+public abstract class LR1Parser<T , U extends LexToken>{
 
-    private List<U> tokSet;
+    private List<U> tokSet; // set of unique tokens
 
-    private List<U> tokens = new ArrayList<>();
+    private List<U> tokens = new ArrayList<>(); // list of lexed tokens
 
     private Set<LR1State<T, U>> states = new HashSet<>();
     private LR1State<T, U> startState;
 
-    private Map<GramSymbol<U>, List<GramProd<T, U>> lhsToProds = new HashMap<>();
+    private Map<GramSymbol<U>, List<GramProd<T, U>>> lhsToProds = new HashMap<>();
 
     private List<GramProd<T, U>> gramProds  = new ArrayList<>();
     private List<GramSymbol<U>> nonTermSyms = new ArrayList<>();
@@ -101,49 +116,49 @@ public abstract class LR1Parser<T, U>{
 
 
     private Triplet<Map<String, List<String>>,
-           Map<String, List<String>>,
-           List<String>> extrFirstAndFollow(){
-        // extract the Map<String, List<U>> for first and follow and
-        // List<String> for nullability
-        Map<String, List<String>> firsts = new HashMap<>();
-        Map<String, List<String>> follows = new HashMap<>();
-        List<String> nulls = new ArrayList<>();
-        for(GramSymbol<U> sym : this.nonTermSyms){
+            Map<String, List<String>>,
+            List<String>> extrFirstAndFollow(){
+                // extract the Map<String, List<U>> for first and follow and
+                // List<String> for nullability
+                Map<String, List<String>> firsts = new HashMap<>();
+                Map<String, List<String>> follows = new HashMap<>();
+                List<String> nulls = new ArrayList<>();
+                for(GramSymbol<U> sym : this.nonTermSyms){
 
-            List<String> currFirsts = firsts.getOrDefault(sym.getValue(), new ArrayList<>());
-            for(GramSymbol<U> sym_ : sym.getFirstSet()){
-                currFirsts.add(sym_.getSymbolType().name());
-            }
-            firsts.put(sym.getValue(), currFirsts);
-
-
-            List<String> currFollows = follows.getOrDefault(sym.getValue(), new ArrayList<>());
-            for(GramSymbol<U> sym_ : sym.getFollowSet()){
-                currFollows.add(sym_.getSymbolType().name());
-            }
-            follows.put(sym.getValue(), currFollows);
+                    List<String> currFirsts = firsts.getOrDefault(sym.getValue(), new ArrayList<>());
+                    for(GramSymbol<U> sym_ : sym.getFirstSet()){
+                        currFirsts.add(sym_.getSymbolToken().getName());
+                    }
+                    firsts.put(sym.getValue(), currFirsts);
 
 
-            if(sym.getIsNullable()){
-                nulls.add(sym.getValue());
-            }
-        }
+                    List<String> currFollows = follows.getOrDefault(sym.getValue(), new ArrayList<>());
+                    for(GramSymbol<U> sym_ : sym.getFollowSet()){
+                        currFollows.add(sym_.getSymbolToken().getName());
+                    }
+                    follows.put(sym.getValue(), currFollows);
 
-        return new Triplet<>(firsts, follows, nulls);
+
+                    if(sym.getIsNullable()){
+                        nulls.add(sym.getValue());
+                    }
+                }
+
+                return new Triplet<>(firsts, follows, nulls);
     }
 
 
     private void makeFirstAndFollow(){
         while(true){
             Triplet<Map<String, List<String>>,
-                       Map<String, List<String>>,
-                       List<String>> trip1 = this.extrFirstAndFollow();
+                Map<String, List<String>>,
+                List<String>> trip1 = this.extrFirstAndFollow();
 
             this.makeFixedSets();
 
             Triplet<Map<String, List<String>>,
-                       Map<String, List<String>>,
-                       List<String>> trip2 = this.extrFirstAndFollow();
+                Map<String, List<String>>,
+                List<String>> trip2 = this.extrFirstAndFollow();
 
             if(trip1.equals(trip2)){break;}
         }
@@ -160,23 +175,23 @@ public abstract class LR1Parser<T, U>{
         // adding the starting state's item {Start -> . Prog $, ?}
         List<LR1State<T, U>> currStates = new ArrayList<>();
         GramProd<T, U> startProd = this.lhsToProds(this.valueToSym.get("Start"));
-        LR1item<T, U> startItem = new LR1Item(startProd, 0, null);
+        LR1item<T, U> startItem = new LR1item<>(startProd, 0, null);
         LR1State<T, U> startState = new LR1State<>(new ArrayList<>(List.of(startItem)), this.lhsToProds);
 
         this.startState = startState;
 
-        startState.closure()
+        startState.closure();
         currStates.add(startState);
 
         int idx = 0;
         while(idx < currStates.size()){
-            Map<GramSymbol<T, U>, List<LR1item<T, U>> symToItems = new HashMap<>();
-            for(LR1Item<T, U> it: currStates.get(idx).getItems()){
+            Map<GramSymbol<U>, List<LR1item<T, U>>> symToItems = new HashMap<>();
+            for(LR1item<T, U> it: currStates.get(idx).getItems()){
                 if(it.getStackTopIdx() < it.getProd().getRhs().size()){
                     // shift/goto action
                     GramSymbol<U> lookaheadsym = it.getProd().getRhs().get(it.getStackTopIdx());
                     List<LR1item<T, U>> itemlist = symToItems.getOrDefault(lookaheadsym, new ArrayList<>());
-                    itemlist.add(new LR1item(it.getProd(), it.getStackTopIdx()+1, it.getLookahead()));
+                    itemlist.add(new LR1item<>(it.getProd(), it.getStackTopIdx()+1, it.getLookahead()));
                     symToItems.put(lookaheadsym, itemlist);
 
                 }else{
@@ -194,7 +209,7 @@ public abstract class LR1Parser<T, U>{
             // these and see if it is a new LR1State, if it is then add it into this.states
             // and also into the currStates list. Finally put the action into the actions
             // of this LR1State
-            for(Map.Entry<GramSymbol<U>, List<LR1item>> ent: symToItems.entrySet()){
+            for(Map.Entry<GramSymbol<U>, List<LR1item<T, U>>> ent: symToItems.entrySet()){
                 LR1State<T,U> newState = new LR1State<>(ent.getValue(), this.lhsToProds);
                 newState = newState.closure();
                 LR1State<T,U> existingState = this.stateExists(newState);
@@ -211,7 +226,7 @@ public abstract class LR1Parser<T, U>{
         }
     }
 
-    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, BiConsumer<Deque<LR1State<T,U>, Deque<Pair<T, GramSymbol<U>>>>>> prodStrs){
+    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, ReduceAction<T, U>>> prodStrs){
 
         this.tokSet = termSyms;
 
@@ -230,9 +245,10 @@ public abstract class LR1Parser<T, U>{
             this.addValueToSym(tok.getName(), gramSym);
         }
 
-        for(Pair<List<String>, BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>>>> prodPair: prodStrs){
+        for(Pair<List<String>, ReduceAction<T, U>> prodPair: prodStrs){
             List<String> prod = prodPair.first();
-            BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>>> supp = prodPair.second();
+            ReduceAction<T, U> supp = prodPair.second();
+
             GramSymbol<U> lhs = this.getValueToSym(prod.get(0));
             List<GramSymbol<U>> rhs = new ArrayList<>();
             for(int i=1; i< prod.size(); i++){
@@ -241,7 +257,7 @@ public abstract class LR1Parser<T, U>{
             this.addGramProd(new GramProd<T, U>(lhs, rhs, supp));
         }
         this.makeFirstAndFollow(); // Follow set is wasteful for LR1 parser but we do it
-        // anyways since this method is legacy from lexer package
+                                   // anyways since this method is legacy from lexer package
         this.makeStates();
         // lousey design, if parser fails to form LR1 parse table it will throw an unchecked Excpetion.
         // TODO: to return boolean upon parser success
@@ -277,8 +293,8 @@ public abstract class LR1Parser<T, U>{
 
         Integer N = this.tokens.size();
 
-        oldIdx = 0; // the index of next lookahead for the old stack.
-        currIdx = 0; // the index of the next lookahead for the new stack.
+        Integer oldIdx = 0; // the index of next lookahead for the old stack.
+        Integer currIdx = 0; // the index of the next lookahead for the new stack.
 
         List<ParseErr<U>> errList = new ArrayList<>();
 
@@ -293,7 +309,8 @@ public abstract class LR1Parser<T, U>{
 
             // look for the action for this gramSym in the currState
             LR1State<T,U> currState = currStateStack.peek();
-            Action action = currState.getAction(gramSym);
+            Action<T, U> action = currState.getAction(gramSym);
+
             if(action == null){
                 // error on currStack
                 // we have to insert, sub, del every tok possible in bet
@@ -313,15 +330,15 @@ public abstract class LR1Parser<T, U>{
                 }
 
                 // try substitution
-                outer_:
+outer_:
                 for(U candTok: this.tokSet){
-                   GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
-                   candGramSym.setSymbolToken(candTok);
+                    GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
+                    candGramSym.setSymbolToken(candTok);
 
-                   ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
+                    ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
 
-                   outer:
-                   while(it.hasNext()){
+outer:
+                    while(it.hasNext()){
                         GramSymbol<U> nowSym = it.next().second();
                         it.set(new Pair<>(null, candGramSym)); // edit the window
 
@@ -333,31 +350,33 @@ public abstract class LR1Parser<T, U>{
                         for(Pair<T, GramSymbol<U>> nextSym_: window){
                             GramSymbol<U> nextSym = nextSym_.second();
 
-                            LR1State<T,U> st = cpy_oldStateStack.peek();
-                            Action ac = st.getAction(nextSym);
+                            LR1State<T, U> st = cpy_oldStateStack.peek();
+
+                            Action<T, U> ac = st.getAction(nextSym);
+
                             if(ac == null){
                                 it.set(new Pair<>(null, nowSym)); // restore window
                                 continue outer;
                             }
-                            if (ac instanceof Action.Shift sh) {
-                                LR1State<T,U> state = sh.state();
+                            if (ac instanceof Action.Shift<?, ?> shAction) {
+                                LR1State<T, U> state = (LR1State<T, U>) shAction.state();
                                 // use state
                                 cpy_oldStateStack.push(state);
                                 cpy_oldSymStack.push(new Pair<>(null, nextSym));
 
-                            } else if (ac instanceof Action.Reduce re) {
-                                GramProd<?, ?> prod = re.prod();
+                            } else if (ac instanceof Action.Reduce<?, ?> reAction) {
+                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     cpy_oldSymStack.pop();
                                     cpy_oldStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.shift gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
                                 cpy_oldStateStack.push(gotoAct.state());
                                 cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                            } else if (ac instanceof Action.Accept ac) {
+                            } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 expectedTok = candTok; // found a token!! exit and
                                 opCode = 0;
@@ -373,20 +392,20 @@ public abstract class LR1Parser<T, U>{
                         opCode = 0;
                         tokIdx = it.previousIndex();
                         break outer_;
-                   }
+                    }
                 }
 
                 // try insertion
                 if(expectedTok == null){
-                    outerinsert_:
+outerinsert_:
                     for(U candTok: this.tokSet){
-                       GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
-                       candGramSym.setSymbolToken(candTok);
+                        GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
+                        candGramSym.setSymbolToken(candTok);
 
-                       ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
+                        ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
 
-                       outerinsert:
-                       while(it.hasNext()){
+outerinsert:
+                        while(it.hasNext()){
                             GramSymbol<U> nowSym = it.next().second();
                             Integer insertIdx = it.previousIndex();
                             it.add(new Pair<>(null, candGramSym)); // edit the window by inserting the candTok
@@ -400,30 +419,31 @@ public abstract class LR1Parser<T, U>{
                                 GramSymbol<U> nextSym = nextSym_.second();
 
                                 LR1State<T,U> st = cpy_oldStateStack.peek();
-                                Action ac = st.getAction(nextSym);
+                                Action<T, U> ac = st.getAction(nextSym);
+
                                 if(ac == null){
                                     it.next(); it.remove(); // restore window
                                     continue outerinsert;
                                 }
-                                if (ac instanceof Action.Shift sh) {
-                                    LR1State<T,U> state = sh.state();
+                                if (ac instanceof Action.Shift<?,?> shAction) {
+                                    LR1State<T,U> state = (LR1State<T, U>) shAction.state();
                                     // use state
                                     cpy_oldStateStack.push(state);
                                     cpy_oldSymStack.push(new Pair<>(null, nextSym));
 
-                                } else if (ac instanceof Action.Reduce re) {
-                                    GramProd<?, ?> prod = re.prod();
+                                } else if (ac instanceof Action.Reduce<?,?> reAction) {
+                                    GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                     // use prod
                                     for(GramSymbol<U> rhsSym: prod.getRhs()){
                                         cpy_oldSymStack.pop();
                                         cpy_oldStateStack.pop();
                                     }
                                     // warning: here assuming gotoAct will always shift
-                                    Action.shift gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                    Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
                                     cpy_oldStateStack.push(gotoAct.state());
                                     cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                                } else if (ac instanceof Action.Accept ac) {
+                                } else if (ac instanceof Action.Accept<?,?> acAction) {
                                     // accept
                                     expectedTok = candTok; // found a token!! exit and
                                     opCode = 1;
@@ -439,50 +459,52 @@ public abstract class LR1Parser<T, U>{
                             opCode = 1;
                             tokIdx = insertIdx;
                             break outerinsert_;
-                       }
+                        }
                     }
                 }
 
                 // try deletion
                 if(expectedTok == null){
-                   outerdel:
-                   while(it.hasNext()){
-                        GramSymbol<U> nowSym = it.next();
+                        ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
+outerdel:
+                    while(it.hasNext()){
+                        Pair<T, GramSymbol<U>> nowSym = it.next();
                         Integer delIdx = it.previousIndex();
 
                         it.remove(); // edit the window by removing a tok
-                        // we try to see if the cpy_oldSymStack can go beyond the
-                        // currIdx upto 4 tokens.
+                                     // we try to see if the cpy_oldSymStack can go beyond the
+                                     // currIdx upto 4 tokens.
                         Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
                         Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
                         for(Pair<T, GramSymbol<U>> nextSym_: window){
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = cpy_oldStateStack.peek();
-                            Action ac = st.getAction(nextSym);
+                            Action<T, U> ac = st.getAction(nextSym);
+
                             if(ac == null){
                                 it.add(nowSym); // restore window
                                 continue outerdel;
                             }
-                            if (ac instanceof Action.Shift sh) {
-                                LR1State state = sh.state();
+                            if (ac instanceof Action.Shift<?,?> shAction) {
+                                LR1State<T, U> state = (LR1State<T, U>) shAction.state();
                                 // use state
                                 cpy_oldStateStack.push(state);
                                 cpy_oldSymStack.push(new Pair<>(null, nextSym));
 
-                            } else if (ac instanceof Action.Reduce re) {
-                                GramProd<?, ?> prod = re.prod();
+                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
+                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     cpy_oldSymStack.pop();
                                     cpy_oldStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.shift gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
                                 cpy_oldStateStack.push(gotoAct.state());
                                 cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                            } else if (ac instanceof Action.Accept ac) {
+                            } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 expectedTok = null; // no token in case of del
                                 opCode = 2;
@@ -491,14 +513,14 @@ public abstract class LR1Parser<T, U>{
                                 break outerdel;
                             }
                         }
-                        it.add(new Pair<>(null, nowSym)); // restore the window by deleting the tok
+                        it.add(nowSym); // restore the window by adding the deleted tok
 
                         // if we came here then we found a candTok
                         expectedTok = null; // found a token!! exit and
                         opCode = 2;
                         tokIdx = delIdx;
                         break outerdel;
-                   }
+                    }
                 }
 
                 // bringing back the size of window to its normal size
@@ -507,106 +529,106 @@ public abstract class LR1Parser<T, U>{
                 }
 
                 switch(opCode){
-                    case 0:
+                    case 0: {
                         currIdx++;
-                        window.set(tokIdx, expectedTok);
+                        window.set(tokIdx, new Pair<>(null, expectedTok));
 
-                        Deque<LR1State<T,U>> currStateStack = new ArrayDeque<>(oldStateStack);
-                        Deque<Pair<T, GramSymbol<U>>> currSymStack = new ArrayDeque<>(oldSymStack);
+                        currStateStack = new ArrayDeque<>(oldStateStack);
+                        currSymStack = new ArrayDeque<>(oldSymStack);
 
                         for(Pair<T, GramSymbol<U>> nextSym_: window){
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = currStateStack.peek();
-                            Action ac = st.getAction(nextSym);
+                            Action<T, U> ac = st.getAction(nextSym);
 
                             if(ac == null){
                                 // we shouldn't get here
                             }
 
-                            if (ac instanceof Action.Shift sh) {
-                                LR1State<T,U> state = sh.state();
+                            if (ac instanceof Action.Shift<?,?> shAction) {
+                                LR1State<T,U> state = (LR1State<T, U>) shAction.state();
                                 // use state
                                 currStateStack.push(state);
                                 currSymStack.push(new Pair<>(null, nextSym));
 
-                            } else if (ac instanceof Action.Reduce re) {
-                                GramProd<?, ?> prod = re.prod();
+                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
+                                GramProd<T, U> prod = (GramProd<T, U>) re.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     currSymStack.pop();
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                            } else if (ac instanceof Action.Accept ac) {
+                            } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 currAccepted = true;
                             }
                         }
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                                               tok.getColNo(),
-                                                               expectedTok,
-                                                               tok);
+                                tok.getColNo(),
+                                expectedTok,
+                                tok);
                         errList.add(errParse);
                         continue;
-
-                    case 1:
+                    }
+                    case 1: {
                         currIdx++;
-                        window.add(tokIdx, expectedTok);
+                        window.add(tokIdx, new Pair<>(null, expectedTok));
 
-                        Deque<LR1State<T,U>> currStateStack = new ArrayDeque<>(oldStateStack);
-                        Deque<Pair<T, GramSymbol<U>>> currSymStack = new ArrayDeque<>(oldSymStack);
+                        currStateStack = new ArrayDeque<>(oldStateStack);
+                        currSymStack = new ArrayDeque<>(oldSymStack);
 
                         for(Pair<T, GramSymbol<U>> nextSym_: window){
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = currStateStack.peek();
-                            Action ac = st.getAction(nextSym);
+                            Action<T, U> ac = st.getAction(nextSym);
 
                             if(ac == null){
                                 // we shouldn't get here
                             }
 
-                            if (ac instanceof Action.Shift sh) {
-                                LR1State<T,U> state = sh.state();
+                            if (ac instanceof Action.Shift<?,?> shAction) {
+                                LR1State<T,U> state = (LR1State<T,U>) shAction.state();
                                 // use state
                                 currStateStack.push(state);
                                 currSymStack.push(new Pair<>(null, nextSym));
 
-                            } else if (ac instanceof Action.Reduce re) {
-                                GramProd<?, ?> prod = re.prod();
+                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
+                                GramProd<T, U> prod =(GramProd<T, U>) reAction.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     currSymStack.pop();
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                            } else if (ac instanceof Action.Accept ac) {
+                            } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 currAccepted = true;
                             }
                         }
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                                               tok.getColNo(),
-                                                               expectedTok,
-                                                               tok);
+                                tok.getColNo(),
+                                expectedTok,
+                                tok);
                         errList.add(errParse);
                         continue;
-
-                    case 2:
+                    }
+                    case 2: {
                         currIdx++;
                         window.remove(tokIdx);
 
-                        Deque<LR1State<T,U>> currStateStack = new ArrayDeque<>(oldStateStack);
-                        Deque<GramSymbol<U>> currSymStack = new ArrayDeque<>(oldSymStack);
+                        currStateStack = new ArrayDeque<>(oldStateStack);
+                        currSymStack = new ArrayDeque<>(oldSymStack);
 
                         for(Pair<T, GramSymbol<U>> nextSym_: window){
                             GramSymbol<U> nextSym = nextSym_.second();
@@ -618,59 +640,60 @@ public abstract class LR1Parser<T, U>{
                                 // we shouldn't get here
                             }
 
-                            if (ac instanceof Action.Shift sh) {
-                                LR1State<T,U> state = sh.state();
+                            if (ac instanceof Action.Shift<?, ?> shAction) {
+                                LR1State<T,U> state = (LR1State<T, U>)shAction.state();
                                 // use state
                                 currStateStack.push(state);
                                 currSymStack.push(new Pair<>(null, nextSym));
 
-                            } else if (ac instanceof Action.Reduce re) {
-                                GramProd<?, ?> prod = re.prod();
+                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
+                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     currSymStack.pop();
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
-                            } else if (ac instanceof Action.Accept ac) {
+                            } else if (ac instanceof Action.Accept<?, ?> acAction) {
                                 // accept
                                 currAccepted = true;
                             }
                         }
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                                               tok.getColNo(),
-                                                               expectedTok,
-                                                               tok);
+                                tok.getColNo(),
+                                expectedTok,
+                                tok);
                         errList.add(errParse);
                         continue;
+                    }
                 }
             }
 
             // no error on this tok
             // update currStateStack and currSymStack
-            if (action instanceof Action.Shift shift) {
-                LR1State<T,U> state = shift.state();
+            if (action instanceof Action.Shift<?,?> shift) {
+                LR1State<T,U> state = (LR1State<T,U>) shift.state();
                 // use state
                 currStateStack.push(state);
                 currSymStack.push(new Pair<>(null, gramSym));
 
-            } else if (action instanceof Action.Reduce reduce) {
-                GramProd<T, U> prod = reduce.prod();
+            } else if (action instanceof Action.Reduce<?,?> reduce) {
+                GramProd<T, U> prod = (GramProd<T, U>) reduce.prod();
                 // use prod
                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                     currSymStack.pop();
                     currStateStack.pop();
                 }
                 // warning: here assuming gotoAct will always shift
-                Action.shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
                 currStateStack.push(gotoAct.state());
                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
-            } else if (action instanceof Action.Accept accept) {
+            } else if (action instanceof Action.Accept<?,?> accept) {
                 // accept
                 currAccepted = true;
             }
@@ -680,26 +703,20 @@ public abstract class LR1Parser<T, U>{
             if(window.size() > windowSz){
                 GramSymbol<U> gramSymFront = window.removeFirst().second();
 
-                Action action = oldStateStack.peek().getAction(gramSymFront);
+                Action<T, U> action_ = oldStateStack.peek().getAction(gramSymFront);
 
-                if (action instanceof Action.Shift shift) {
-                    LR1State<T,U> state = shift.state();
+                if (action_ instanceof Action.Shift<?, ?> shift_) {
+                    LR1State<T,U> state = (LR1State<T, U>) shift_.state();
                     // use state
                     oldStateStack.push(state);
-                    oldSymStack.push(gramSymFront);
+                    oldSymStack.push(new Pair<>(null, gramSymFront));
 
-                } else if (action instanceof Action.Reduce reduce) {
-                    GramProd<T, U> prod = reduce.prod();
-                    // use prod
-                    for(GramSymbol<U> rhsSym: prod.getRhs()){
-                        oldSymStack.pop();
-                        oldStateStack.pop();
-                    }
-                    // warning: here assuming gotoAct will always shift
-                    Action.shift gotoAct = oldStateStack.peek().getAction(prod.getLhs());
-                    oldStateStack.push(gotoAct.state());
-                    oldSymStack.push(prod.getLhs());
-                } else if (action instanceof Action.Accept accept) {
+                } else if (action_ instanceof Action.Reduce<?, ?> reduce_) {
+
+                    GramProd<T, U> prod = (GramProd<T, U>) reduce_.prod();
+                    prod.getSupp().apply(prod, oldStateStack, oldSymStack);
+
+                } else if (action_ instanceof Action.Accept<?, ?> accept_) {
                     // accept
                     // should not come here ever.
                     astFull = oldSymStack.peek().first(); // Prog. $
@@ -711,31 +728,24 @@ public abstract class LR1Parser<T, U>{
         // curr has accepted. we need to consume the tokens in the window.
         if(currAccepted && astFull == null){
             while(window.size() > 0){
-                GramSymbol<U> gramSym = window.removeFirst();
+                GramSymbol<U> gramSym = window.removeFirst().second();
 
-                Action action = oldStateStack.peek().getAction(gramSymFront);
+                Action<T, U> action_ = oldStateStack.peek().getAction(gramSym);
 
-                if (action instanceof Action.Shift shift) {
-                    LR1State<T,U> state = shift.state();
+                if (action_ instanceof Action.Shift<?,?> shift_) {
+                    LR1State<T,U> state = (LR1State<T,U>) shift_.state();
                     // use state
                     oldStateStack.push(state);
-                    oldSymStack.push(gramSymFront);
+                    oldSymStack.push(new Pair<>(null, gramSym));
 
-                } else if (action instanceof Action.Reduce reduce) {
-                    GramProd<T, U> prod = reduce.prod();
-                    //// use prod
-                    //for(GramSymbol<U> rhsSym: prod.getRhs()){
-                    //    oldSymStack.pop();
-                    //    oldStateStack.pop();
-                    //}
-                    //// warning: here assuming gotoAct will always shift
-                    //Action.shift gotoAct = oldStateStack.peek().getAction(prod.getLhs());
-                    //oldStateStack.push(gotoAct.state());
-                    //oldSymStack.push(prod.getLhs());
-                    BiConsumer<?, ?> reducFunc = prod.getSupp();
-                    reducFunc.accept(oldStateStack, oldSymStack);
+                } else if (action_ instanceof Action.Reduce<?,?> reduce_) {
+                    GramProd<T, U> prod = (GramProd<T, U>)reduce_.prod();
 
-                } else if (action instanceof Action.Accept accept) {
+                    ReduceAction<T, U> reducFunc = prod.getSupp();
+
+                    reducFunc.apply(prod, oldStateStack, oldSymStack);
+
+                } else if (action_ instanceof Action.Accept<?,?> accept_) {
                     // accept
                     // should not come here ever.
                     astFull = oldSymStack.peek().first(); // Prog. $

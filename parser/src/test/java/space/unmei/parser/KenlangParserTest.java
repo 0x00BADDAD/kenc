@@ -2,6 +2,21 @@ package space.unmei.parser;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import space.unmei.lexer.RegexParser;
+import space.unmei.lexer.RegexLexer;
+import space.unmei.lexer.FinalNfa;
+import space.unmei.lexer.Dfa;
+import space.unmei.lexer.Lexer;
+import space.unmei.lexer.LexToken;
+import space.unmei.lexer.LexerException;
+
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -107,7 +122,7 @@ public class KenlangParserTest{
         Dfa minDfa = dfa.minDfa();
         Reader reader = new InputStreamReader(
             Objects.requireNonNull(
-                getClass().getResourceAsStream("/hello.kl")
+                getClass().getResourceAsStream("/small.kl")
             )
         );
 
@@ -123,6 +138,12 @@ public class KenlangParserTest{
                 System.err.println("Column: " + le.getColumn());
             }
         }
+        // lexing done successfully!
+
+        KenlangParser parser = new KenlangParser();
+        parser.setup();
+        parser.setTokens(toks);
+        //Pair<AstNode, List<ParseErr<LexToken>> ast_res = parser.parse();
 
     }
 

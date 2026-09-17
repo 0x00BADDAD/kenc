@@ -1,26 +1,25 @@
 package space.unmei.parser;
 
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-
 import java.util.function.BiConsumer;
+import java.util.Deque;
+
+import space.unmei.ast.*;
+import space.unmei.lexer.LexToken;
 
 // U -> Token Type
 // T -> type returned by the semantic reduce action
-public class GramProd<T, U>{
+public class GramProd<T , U extends LexToken>{
 
     private GramSymbol<U> lhs;
     private List<GramSymbol<U>> rhs = new ArrayList<>();
-    private BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> suppFunc;
+    private ReduceAction<T, U> suppFunc;
 
     public GramProd(){}
 
-    public GramProd(GramSymbol<U> lhs, List<GramSymbol<U>> rhs, BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> supp){
+    public GramProd(GramSymbol<U> lhs, List<GramSymbol<U>> rhs, BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>>> supp){
         this.lhs = lhs;
         this.rhs = rhs;
         this.suppFunc = supp;
@@ -30,7 +29,7 @@ public class GramProd<T, U>{
         return this.lhs;
     }
 
-    public BiConsumer<Deque<LR1State<T,U>>, Deque<Pair<T, GramSymbol<U>>> getSupp(){
+    public ReduceAction<T, U> getSupp(){
         return this.suppFunc;
     }
 

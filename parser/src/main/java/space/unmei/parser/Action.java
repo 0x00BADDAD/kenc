@@ -1,9 +1,17 @@
 package space.unmei.parser;
 
-public interface Action {
-    record Shift(LR1State state) implements Action {}
+import space.unmei.lexer.LexToken;
 
-    record Reduce(GramProd<?, ?> prod) implements Action {}
+public interface Action<T , U extends LexToken> {
 
-    record Accept() implements Action {}
+    record Shift<T , U extends LexToken>(
+            LR1State<T, U> state
+    ) implements Action<T, U> {}
+
+    record Reduce<T , U extends LexToken>(
+            GramProd<T, U> prod
+    ) implements Action<T, U> {}
+
+    record Accept<T , U extends LexToken>()
+            implements Action<T, U> {}
 }

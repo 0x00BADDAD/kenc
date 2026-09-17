@@ -2,6 +2,7 @@ package space.unmei.ast.stmts;
 
 import space.unmei.ast.Pos;
 import space.unmei.ast.exps.AstExp;
+import space.unmei.ast.*;
 
 public class AstIfElseStmt extends AstStmt{
 
@@ -10,7 +11,7 @@ public class AstIfElseStmt extends AstStmt{
     private AstStmts elseStmts;
 
     public AstIfElseStmt(Pos pos, AstExp cond, AstStmts thenStmts, AstStmts elseStmts){
-        this.pos = pos;
+        super(pos);
         this.cond = cond;
         this.thenStmts = thenStmts;
         this.elseStmts = elseStmts;

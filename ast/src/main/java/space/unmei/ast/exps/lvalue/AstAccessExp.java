@@ -1,6 +1,12 @@
 package space.unmei.ast.exps.lvalue;
 
+import space.unmei.ast.types.*;
+import space.unmei.ast.exps.*;
+import space.unmei.ast.exps.lvalue.*;
+import space.unmei.ast.*;
 import space.unmei.ast.Pos;
+
+import space.unmei.semant.Symbol;
 
 public class AstAccessExp extends AstLvalueExp{
 
@@ -8,8 +14,7 @@ public class AstAccessExp extends AstLvalueExp{
     private Symbol fieldName;
 
     public AstAccessExp(Pos pos, AstType ty, AstLvalueExp target, Symbol fieldName){
-        this.ty = ty;
-        this.pos = pos;
+        super(pos, ty);
         this.target = target;
         this.fieldName = fieldName;
     }

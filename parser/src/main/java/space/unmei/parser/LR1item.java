@@ -1,7 +1,9 @@
 package space.unmei.parser;
 
+import java.util.Objects;
+import space.unmei.lexer.LexToken;
 
-public class LR1item<T, U>{
+public class LR1item<T, U extends LexToken>{
 
     // GramProd, idx of top of stack, single lookahead term symbol
     private GramProd<T, U> prod;
@@ -42,7 +44,7 @@ public class LR1item<T, U>{
         if (this == obj)
             return true;
 
-        if (!(obj instanceof LR1item<?, ?> other))
+        if (!(obj instanceof LR1item<?, ?> other_))
             return false;
         return prod.equals(other.prod) && other.stackTopIdx == stackTopIdx && lookahead.equals(other.lookahead);
     }
@@ -51,9 +53,5 @@ public class LR1item<T, U>{
     public int hashCode(){
         return Objects.hash(prod, stackTopIdx, lookahead);
     }
-
-
-
-
 
 }

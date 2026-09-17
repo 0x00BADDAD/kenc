@@ -1,6 +1,9 @@
 package space.unmei.ast.exps.lvalue;
 
-import space.unmei.ast.Pos;
+import space.unmei.ast.types.*;
+import space.unmei.ast.exps.*;
+import space.unmei.ast.exps.lvalue.*;
+import space.unmei.ast.*;
 
 public class AstSubExp extends AstLvalueExp{
 
@@ -8,8 +11,7 @@ public class AstSubExp extends AstLvalueExp{
     private AstExp idxExp;
 
     public AstSubExp(Pos pos, AstType ty, AstLvalueExp target, AstExp idxExp){
-        this.ty = ty;
-        this.pos = pos;
+        super(pos, ty);
         this.target = target;
         this.idxExp = idxExp;
     }

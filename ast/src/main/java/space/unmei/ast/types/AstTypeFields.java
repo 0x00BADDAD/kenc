@@ -1,16 +1,19 @@
 package space.unmei.ast.types;
 
+import space.unmei.ast.*;
+import space.unmei.semant.Symbol;
+import java.util.*;
 
 public class AstTypeFields extends AstNode{
 
     private List<Pair<Symbol, AstType>> tyFields;
 
     public AstTypeFields(Pos pos){
-        this.pos = pos;
+        super(pos);
     }
 
     public AstTypeFields(Pos pos, List<Pair<Symbol, AstType>> tyFields){
-        this.pos = pos;
+        super(pos);
         this.tyFields = tyFields;
     }
 

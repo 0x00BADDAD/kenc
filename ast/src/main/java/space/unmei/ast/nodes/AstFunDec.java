@@ -1,10 +1,11 @@
-package space.unmei.ast.decls;
+package space.unmei.ast.nodes;
 
+import space.unmei.ast.*;
 import space.unmei.ast.Pos;
-import space.unmei.ast.types.AstType;
+import space.unmei.ast.types.*;
 import space.unmei.semant.Symbol;
 
-public class AstFunDec extends AstDecl{
+public class AstFunDec extends AstNode{
 
     private Symbol funName;
     private AstTypeFields formalSignature;
@@ -12,9 +13,10 @@ public class AstFunDec extends AstDecl{
 
     public AstFunDec(Pos pos, Symbol funName, AstTypeFields formalSignature, AstType returnType)
     {
-        this.pos = pos;
+        super(pos);
         this.funName = funName;
         this.formalSignature = formalSignature;
         this.returnType = returnType;
     }
 }
+

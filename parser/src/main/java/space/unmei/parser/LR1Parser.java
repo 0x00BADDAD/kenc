@@ -349,15 +349,13 @@ public abstract class LR1Parser<T , U extends LexToken>{
             GramSymbol<U> gramSym = new GramSymbol<>(false, null);
             gramSym.setSymbolToken(tok);
 
-            // push it into the window
-            window.addLast(new Pair<>(null, gramSym));
 
             // look for the action for this gramSym in the currState
             LR1State<T,U> currState = currStateStack.peek();
             Action<T, U> action = currState.getAction(gramSym);
 
-            System.out.println("for sym: " + gramSym.toString());
-            System.out.printf("finding action for state: " + currState.toString() + "\n");
+            //System.out.println("for sym: " + gramSym.toString());
+            //System.out.printf("finding action for state: " + currState.toString() + "\n");
 
             if(action == null){
                 System.out.println("!!! Action not found!");
@@ -740,6 +738,9 @@ outerdel:
                 currSymStack.push(new Pair<>(null, gramSym));
                 currIdx++;
 
+                // push it into the window
+                window.addLast(new Pair<>(null, gramSym));
+
             } else if (action instanceof Action.Reduce<?,?> reduce) {
                 GramProd<T, U> prod = (GramProd<T, U>) reduce.prod();
                 // use prod
@@ -804,7 +805,7 @@ outerdel:
                     ReduceAction<T, U> reducFunc = prod.getSupp();
 
                     reducFunc.apply(prod, oldStateStack, oldSymStack);
-                    window.addFirst(new Pair<>(null, gramSym)); // for shift we don't consume the token
+                    window.addFirst(new Pair<>(null, gramSym)); // for shift we don't consume the token. so we add it back to window
 
                 } else if (action_ instanceof Action.Accept<?,?> accept_) {
                     // accept

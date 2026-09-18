@@ -1,5 +1,6 @@
 package space.unmei.lexer;
 
+import java.util.Objects;
 
 
 public class LexToken{
@@ -44,5 +45,23 @@ public class LexToken{
 
     public Integer getColNo(){
         return this.colNo;
+    }
+
+  @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (!(obj instanceof LexToken other)) {
+            return false;
+        }
+
+        return Objects.equals(this.name, other.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 }

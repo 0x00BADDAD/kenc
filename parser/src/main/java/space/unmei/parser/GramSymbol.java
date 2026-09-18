@@ -75,20 +75,28 @@ public class GramSymbol<T extends LexToken>{
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
+        }
 
-        if (!(obj instanceof GramSymbol<?> other))
+        if (!(obj instanceof GramSymbol<?> other)) {
             return false;
+        }
 
-        if (isNonTerm != other.isNonTerm)
+        if (isNonTerm != other.isNonTerm) {
             return false;
+        }
 
         if (isNonTerm) {
             return Objects.equals(value, other.value);
         }
 
-        return Objects.equals(token, other.token);
+        return token != null
+                && other.token != null
+                && Objects.equals(
+                    token.getName(),
+                    other.token.getName()
+                );
     }
 
     @Override
@@ -97,8 +105,12 @@ public class GramSymbol<T extends LexToken>{
             return Objects.hash(true, value);
         }
 
-        return Objects.hash(false, token);
+        return Objects.hash(
+            false,
+            token == null ? null : token.getName()
+        );
     }
+
 
     @Override
     public String toString(){
@@ -107,5 +119,6 @@ public class GramSymbol<T extends LexToken>{
         }
         return "| " + this.token.getName() + " |";
     }
+
 }
 

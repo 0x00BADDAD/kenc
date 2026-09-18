@@ -91,7 +91,7 @@ Primary
 
 
 RecordExpr -> NEW TypeVal OPEN_BRACE FieldInit CLOSE_BRACE
-ArrayExpr -> NEW TypeVal OPEN_SQUARE Exp CLOSE_SQUARE OF Exp
+ArrayExpr -> NEW TypeVal OPEN_SQUARE Exp CLOSE_SQUARE OF Unary
 
 // currently empty records are erroneous
 

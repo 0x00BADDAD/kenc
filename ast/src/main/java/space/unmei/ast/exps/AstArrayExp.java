@@ -8,9 +8,9 @@ import space.unmei.semant.Symbol;
 public class AstArrayExp extends AstExp{
 
     private AstExp arrSize;
-    private AstExp arrInitVal;
+    private AstUnaryOpExp arrInitVal;
 
-    public AstArrayExp(Pos pos, AstArrayType ty, AstExp arrSize, AstExp arrInitVal){
+    public AstArrayExp(Pos pos, AstArrayType ty, AstExp arrSize, AstUnaryOpExp arrInitVal){
         super(pos, ty);
         this.arrSize = arrSize;
         this.arrInitVal = arrInitVal;

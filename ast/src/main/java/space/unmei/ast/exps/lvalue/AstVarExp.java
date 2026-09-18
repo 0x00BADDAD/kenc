@@ -1,4 +1,4 @@
-package space.unmei.ast.exps.lavlue;
+package space.unmei.ast.exps.lvalue;
 
 import space.unmei.ast.types.*;
 import space.unmei.ast.exps.*;

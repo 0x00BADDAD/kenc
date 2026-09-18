@@ -40,18 +40,28 @@ public class LR1item<T, U extends LexToken>{
     }
 
     @Override
-    public boolean equals(Object other){
-        if (this == obj)
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
+        }
 
-        if (!(obj instanceof LR1item<?, ?> other_))
-            return false;
-        return prod.equals(other.prod) && other.stackTopIdx == stackTopIdx && lookahead.equals(other.lookahead);
+        if (other instanceof LR1item<?, ?> otherItem) {
+            // Using getters ensures it compiles regardless of private visibility
+            return Objects.equals(this.prod, otherItem.getProd())
+                && this.stackTopIdx == otherItem.getStackTopIdx()
+                && Objects.equals(this.lookahead, otherItem.getLookahead());
+        }
+        return false;
     }
 
     @Override
     public int hashCode(){
         return Objects.hash(prod, stackTopIdx, lookahead);
+    }
+
+    @Override
+    public String toString(){
+        return this.prod.toString() + ", " + this.lookahead.toString() ;
     }
 
 }

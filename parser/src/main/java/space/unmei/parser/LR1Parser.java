@@ -56,6 +56,29 @@ public abstract class LR1Parser<T , U extends LexToken>{
         return null;
     }
 
+    private void addGramProd(GramProd<T, U> prod){
+        this.gramProds.add(prod);
+    }
+
+
+    private void addValueToSym(String val, GramSymbol<U> sym){
+        this.valueToSym.put(val, sym);
+    }
+
+    protected GramSymbol<U> getValueToSym(String val){
+        return this.valueToSym.getOrDefault(val, null);
+    }
+
+
+    private void addTermSym(GramSymbol<U> term){
+        this.termSyms.add(term);
+    }
+
+    private void addNonTermSym(GramSymbol<U> nonTerm){
+        this.nonTermSyms.add(nonTerm);
+    }
+
+
     private void makeFixedSets(){
         // first add term symbols in the first set of term symbols.
         // The algo runs until a fixed point is acheived where,
@@ -164,7 +187,8 @@ public abstract class LR1Parser<T , U extends LexToken>{
         }
     }
 
-    private void makeStates(){
+    private void makeStates(GramSymbol<U> extraEof){
+        //System.out.println("Starting to make states!!");
         // Start -> .Prog $, ? (no lookahead)
         // have a running idx on a growing list of LR1State
         // for every state check if it has a reducible action for a lookahead.
@@ -174,30 +198,38 @@ public abstract class LR1Parser<T , U extends LexToken>{
 
         // adding the starting state's item {Start -> . Prog $, ?}
         List<LR1State<T, U>> currStates = new ArrayList<>();
-        GramProd<T, U> startProd = this.lhsToProds(this.valueToSym.get("Start"));
-        LR1item<T, U> startItem = new LR1item<>(startProd, 0, null);
+        GramProd<T, U> startProd = this.lhsToProds.get(this.valueToSym.get("Start")).get(0); // only one prod will have the "Start" symbol as lhs
+        LR1item<T, U> startItem = new LR1item<>(startProd, 0, extraEof);
         LR1State<T, U> startState = new LR1State<>(new ArrayList<>(List.of(startItem)), this.lhsToProds);
 
         this.startState = startState;
 
-        startState.closure();
+        startState = LR1State.closure(startState);
+
         currStates.add(startState);
+        this.states.add(startState);
 
         int idx = 0;
         while(idx < currStates.size()){
+
             Map<GramSymbol<U>, List<LR1item<T, U>>> symToItems = new HashMap<>();
+
+
             for(LR1item<T, U> it: currStates.get(idx).getItems()){
+
                 if(it.getStackTopIdx() < it.getProd().getRhs().size()){
                     // shift/goto action
-                    GramSymbol<U> lookaheadsym = it.getProd().getRhs().get(it.getStackTopIdx());
-                    List<LR1item<T, U>> itemlist = symToItems.getOrDefault(lookaheadsym, new ArrayList<>());
+                    GramSymbol<U> transisym = it.getProd().getRhs().get(it.getStackTopIdx());
+                    List<LR1item<T, U>> itemlist = symToItems.getOrDefault(transisym, new ArrayList<>());
                     itemlist.add(new LR1item<>(it.getProd(), it.getStackTopIdx()+1, it.getLookahead()));
-                    symToItems.put(lookaheadsym, itemlist);
+                    symToItems.put(transisym, itemlist);
 
                 }else{
                     // reducible item and so this state must have Reduce action for
                     // this lookahead
                     GramSymbol<U> lookaheadsym = it.getLookahead();
+
+
                     if(!lookaheadsym.getIsNonTerm() && lookaheadsym.getSymbolToken().getName().equals("EOF")){
                         currStates.get(idx).addAction(lookaheadsym, new Action.Accept());
                     }else{
@@ -211,7 +243,7 @@ public abstract class LR1Parser<T , U extends LexToken>{
             // of this LR1State
             for(Map.Entry<GramSymbol<U>, List<LR1item<T, U>>> ent: symToItems.entrySet()){
                 LR1State<T,U> newState = new LR1State<>(ent.getValue(), this.lhsToProds);
-                newState = newState.closure();
+                newState = LR1State.closure(newState);
                 LR1State<T,U> existingState = this.stateExists(newState);
                 if(existingState != null){
                     newState = existingState;
@@ -224,9 +256,12 @@ public abstract class LR1Parser<T , U extends LexToken>{
             }
             idx += 1;
         }
+        //System.out.println("Finished making states!!");
+        //System.out.println("Number of states: " + String.valueOf(this.states.size()) );
+
     }
 
-    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, ReduceAction<T, U>>> prodStrs){
+    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, ReduceAction<T, U>>> prodStrs, GramSymbol<U> extraEof){
 
         this.tokSet = termSyms;
 
@@ -249,16 +284,25 @@ public abstract class LR1Parser<T , U extends LexToken>{
             List<String> prod = prodPair.first();
             ReduceAction<T, U> supp = prodPair.second();
 
-            GramSymbol<U> lhs = this.getValueToSym(prod.get(0));
+            GramSymbol<U> lhs = this.valueToSym.get(prod.get(0));
             List<GramSymbol<U>> rhs = new ArrayList<>();
             for(int i=1; i< prod.size(); i++){
                 rhs.add(this.valueToSym.get(prod.get(i)));
             }
-            this.addGramProd(new GramProd<T, U>(lhs, rhs, supp));
+
+            GramProd<T, U> newProd = new GramProd<T, U>(lhs, rhs, supp);
+
+            this.addGramProd(newProd);
+
+            // very critical!! make the this.lhsToProds field here.
+            // i had initially forgotten to do this! disastrous!
+            List<GramProd<T, U>> currProdsForLhs = this.lhsToProds.getOrDefault(this.valueToSym.get(prod.get(0)), new ArrayList<>());
+            currProdsForLhs.add(newProd);
+            this.lhsToProds.put(this.valueToSym.get(prod.get(0)), currProdsForLhs);
         }
         this.makeFirstAndFollow(); // Follow set is wasteful for LR1 parser but we do it
                                    // anyways since this method is legacy from lexer package
-        this.makeStates();
+        this.makeStates(extraEof);
         // lousey design, if parser fails to form LR1 parse table it will throw an unchecked Excpetion.
         // TODO: to return boolean upon parser success
     }
@@ -301,6 +345,7 @@ public abstract class LR1Parser<T , U extends LexToken>{
         while(!currAccepted){
             // consume a token by the currStack
             U tok = this.tokens.get(currIdx);
+            System.out.println("currTok name: " + tok.getName() + " Content: " + tok.getContent());
             GramSymbol<U> gramSym = new GramSymbol<>(false, null);
             gramSym.setSymbolToken(tok);
 
@@ -311,7 +356,11 @@ public abstract class LR1Parser<T , U extends LexToken>{
             LR1State<T,U> currState = currStateStack.peek();
             Action<T, U> action = currState.getAction(gramSym);
 
+            System.out.println("for sym: " + gramSym.toString());
+            System.out.printf("finding action for state: " + currState.toString() + "\n");
+
             if(action == null){
+                System.out.println("!!! Action not found!");
                 // error on currStack
                 // we have to insert, sub, del every tok possible in bet
                 // oldIdx and currIdx
@@ -372,7 +421,7 @@ outer:
                                     cpy_oldStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct = (Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
                                 cpy_oldStateStack.push(gotoAct.state());
                                 cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -439,7 +488,7 @@ outerinsert:
                                         cpy_oldStateStack.pop();
                                     }
                                     // warning: here assuming gotoAct will always shift
-                                    Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                    Action.Shift<T, U> gotoAct = (Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
                                     cpy_oldStateStack.push(gotoAct.state());
                                     cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -500,7 +549,7 @@ outerdel:
                                     cpy_oldStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct = cpy_oldStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
                                 cpy_oldStateStack.push(gotoAct.state());
                                 cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -531,7 +580,11 @@ outerdel:
                 switch(opCode){
                     case 0: {
                         currIdx++;
-                        window.set(tokIdx, new Pair<>(null, expectedTok));
+
+                        GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
+                        gramSym_.setSymbolToken(expectedTok);
+
+                        window.set(tokIdx, new Pair<>(null, gramSym_));
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);
@@ -553,14 +606,14 @@ outerdel:
                                 currSymStack.push(new Pair<>(null, nextSym));
 
                             } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                GramProd<T, U> prod = (GramProd<T, U>) re.prod();
+                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                 // use prod
                                 for(GramSymbol<U> rhsSym: prod.getRhs()){
                                     currSymStack.pop();
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.Shift gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -578,7 +631,11 @@ outerdel:
                     }
                     case 1: {
                         currIdx++;
-                        window.add(tokIdx, new Pair<>(null, expectedTok));
+
+                        GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
+                        gramSym.setSymbolToken(expectedTok);
+
+                        window.add(tokIdx, new Pair<>(null, gramSym_));
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);
@@ -607,7 +664,7 @@ outerdel:
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -625,6 +682,7 @@ outerdel:
                     }
                     case 2: {
                         currIdx++;
+
                         window.remove(tokIdx);
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
@@ -654,7 +712,7 @@ outerdel:
                                     currStateStack.pop();
                                 }
                                 // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
                                 currStateStack.push(gotoAct.state());
                                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -689,7 +747,7 @@ outerdel:
                     currStateStack.pop();
                 }
                 // warning: here assuming gotoAct will always shift
-                Action.Shift<T, U> gotoAct = currStateStack.peek().getAction(prod.getLhs());
+                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
                 currStateStack.push(gotoAct.state());
                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
@@ -701,6 +759,7 @@ outerdel:
             // and update the old statestack and symstack
             // emit the AstNode from here for each reduction
             if(window.size() > windowSz){
+                System.out.println("never got into this loop");
                 GramSymbol<U> gramSymFront = window.removeFirst().second();
 
                 Action<T, U> action_ = oldStateStack.peek().getAction(gramSymFront);
@@ -723,10 +782,11 @@ outerdel:
                     oldAccepted = true;
                 }
             }
-
+            currIdx++;
         }
         // curr has accepted. we need to consume the tokens in the window.
         if(currAccepted && astFull == null){
+            System.out.println("was in the final window consumption loop");
             while(window.size() > 0){
                 GramSymbol<U> gramSym = window.removeFirst().second();
 

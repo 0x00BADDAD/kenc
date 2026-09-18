@@ -738,6 +738,7 @@ outerdel:
                 // use state
                 currStateStack.push(state);
                 currSymStack.push(new Pair<>(null, gramSym));
+                currIdx++;
 
             } else if (action instanceof Action.Reduce<?,?> reduce) {
                 GramProd<T, U> prod = (GramProd<T, U>) reduce.prod();
@@ -782,7 +783,6 @@ outerdel:
                     oldAccepted = true;
                 }
             }
-            currIdx++;
         }
         // curr has accepted. we need to consume the tokens in the window.
         if(currAccepted && astFull == null){
@@ -804,6 +804,7 @@ outerdel:
                     ReduceAction<T, U> reducFunc = prod.getSupp();
 
                     reducFunc.apply(prod, oldStateStack, oldSymStack);
+                    window.addFirst(new Pair<>(null, gramSym)); // for shift we don't consume the token
 
                 } else if (action_ instanceof Action.Accept<?,?> accept_) {
                     // accept

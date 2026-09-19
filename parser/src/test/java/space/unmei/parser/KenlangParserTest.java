@@ -162,42 +162,42 @@ public class KenlangParserTest{
         tok4.setLineNo(1);
         tok4.setColNo(8);
 
-        LexToken tok5 = new LexToken("SEMI_COLON", ";");
-        tok5.setLineNo(1);
-        tok5.setColNo(9);
-
-        LexToken tok5_5 = new LexToken("EOF", "$");
-        tok5_5.setLineNo(1);
-        tok5_5.setColNo(11);
-
-
-        // string lit variable
-        LexToken tok6 = new LexToken("VAR", "var");
-        tok6.setLineNo(1);
-        tok6.setColNo(1);
-
-        LexToken tok7 = new LexToken("ID", "name");
-        tok7.setLineNo(1);
-        tok7.setColNo(5);
-
-        LexToken tok8 = new LexToken("ASSIGN", "=");
-        tok8.setLineNo(1);
-        tok8.setColNo(6);
-
-        LexToken tok9 = new LexToken("STRING_LIT", "\"Hello World\"");
-        tok9.setLineNo(1);
-        tok9.setColNo(8);
-
-        LexToken tok10 = new LexToken("SEMI_COLON", ";");
-        tok10.setLineNo(1);
-        tok10.setColNo(9);
+        //LexToken tok5 = new LexToken("SEMI_COLON", ";");
+        //tok5.setLineNo(1);
+        //tok5.setColNo(9);
 
         LexToken tok11 = new LexToken("EOF", "$");
         tok11.setLineNo(1);
         tok11.setColNo(11);
 
+
+        // string lit variable
+        //LexToken tok6 = new LexToken("VAR", "var");
+        //tok6.setLineNo(1);
+        //tok6.setColNo(1);
+
+        //LexToken tok7 = new LexToken("ID", "my_name");
+        //tok7.setLineNo(1);
+        //tok7.setColNo(5);
+
+        //LexToken tok8 = new LexToken("ASSIGN", "=");
+        //tok8.setLineNo(1);
+        //tok8.setColNo(6);
+
+        //LexToken tok9 = new LexToken("STRING_LIT", "\"Hello World\"");
+        //tok9.setLineNo(1);
+        //tok9.setColNo(8);
+
+        //LexToken tok10 = new LexToken("SEMI_COLON", ";");
+        //tok10.setLineNo(1);
+        //tok10.setColNo(9);
+
+        //LexToken tok11 = new LexToken("EOF", "$");
+        //tok11.setLineNo(1);
+        //tok11.setColNo(11);
+
         // temp tok array
-        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok5, tok5_5, tok6, tok7, tok8, tok9, tok10, tok11));
+        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok11));
 
         KenlangParser lr1parser = new KenlangParser();
         lr1parser.setup();

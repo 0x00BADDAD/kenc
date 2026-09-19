@@ -788,6 +788,7 @@ outerdel:
 
                     GramProd<T, U> prod = (GramProd<T, U>) reduce_.prod();
                     prod.getSupp().apply(prod, oldStateStack, oldSymStack);
+                    window.addFirst(new Pair<>(null, gramSymFront)); // for shift we don't consume the token. so we add it back to window
 
                 } else if (action_ instanceof Action.Accept<?, ?> accept_) {
                     // accept

@@ -44,6 +44,7 @@ public abstract class LR1Parser<T , U extends LexToken>{
     }
 
     public void setTokens(List<U> tokens){
+        // TODO: filter out the WHITESPACE tokens from the list of `tokens`
         this.tokens = tokens;
     }
 

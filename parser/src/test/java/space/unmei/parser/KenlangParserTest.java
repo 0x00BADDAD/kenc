@@ -166,6 +166,10 @@ public class KenlangParserTest{
         tok5.setLineNo(1);
         tok5.setColNo(9);
 
+        LexToken tok5_5 = new LexToken("EOF", "$");
+        tok5_5.setLineNo(1);
+        tok5_5.setColNo(11);
+
 
         // string lit variable
         LexToken tok6 = new LexToken("VAR", "var");
@@ -193,7 +197,7 @@ public class KenlangParserTest{
         tok11.setColNo(11);
 
         // temp tok array
-        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok5, tok6, tok7, tok8, tok9, tok10, tok11));
+        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok5, tok5_5, tok6, tok7, tok8, tok9, tok10, tok11));
 
         KenlangParser lr1parser = new KenlangParser();
         lr1parser.setup();
@@ -209,7 +213,12 @@ public class KenlangParserTest{
             if(ast_res.first() == null){
                 System.out.println("No ast found!");
             }
-            //(ast_res.first()).printNode();
+            System.out.println("---------------------------------------------------");
+            System.out.println("---------------------------------------------------");
+            System.out.println("---------------------------------------------------");
+            System.out.println("---------------------------------------------------");
+            System.out.println("---------------------------------------------------");
+            (ast_res.first()).printNode();
         }
 
     }

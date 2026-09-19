@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.Test
+
+
 plugins {
     `java-library`
 }
@@ -16,5 +19,11 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.withType<Test>().configureEach {
+    reports {
+        html.required.set(true)
+    }
 }
 

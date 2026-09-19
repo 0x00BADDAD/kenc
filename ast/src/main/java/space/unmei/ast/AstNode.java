@@ -33,51 +33,51 @@ public class AstNode{
 
             printIndent(indent);
             System.out.println( node.getClass().getSimpleName() + "#" + id);
-                                                                                                    // Prevent infinite recursion for cyclic references.
-                                                                                                    if (!printed.add(node)) {
+            // Prevent infinite recursion for cyclic references.
+            if (!printed.add(node)) {
                 printIndent(indent + 1);
                 System.out.println("<already printed>");
                 return;
-          }
+            }
 
-          Class<?> clazz = node.getClass();
+            Class<?> clazz = node.getClass();
 
-          while (clazz != null && clazz != Object.class) {
-             for (Field field : clazz.getDeclaredFields()) {
+            while (clazz != null && clazz != Object.class) {
+                 for (Field field : clazz.getDeclaredFields()) {
 
-                    if (Modifier.isStatic(field.getModifiers())) {
-                        continue;
-                    }
-
-                    field.setAccessible(true);
-
-                    try {
-                        Object value = field.get(node);
-                        printIndent(indent + 1);
-                        System.out.print(field.getName() + " = ");
-
-                        if (value == null) {
-                            System.out.println("null");
-
-                        } else if (value instanceof AstNode child) {
-
-                            int childId = getId(child);
-
-                            System.out.println(child.getClass().getSimpleName() + "#" + childId);
-                            print(child, indent + 2);
-
-                        } else {
-                            System.out.println(value.getClass().getSimpleName() + "#" + getId(value) + " = " + value);
+                        if (Modifier.isStatic(field.getModifiers())) {
+                            continue;
                         }
 
-                    } catch (IllegalAccessException e) {
-                        printIndent(indent + 1);
-                        System.out.println(field.getName() + " = < inaccessible >");
-                    }
-                 }
+                        field.setAccessible(true);
 
-                 clazz = clazz.getSuperclass();
-            }
+                        try {
+                            Object value = field.get(node);
+                            printIndent(indent + 1);
+                            System.out.print(field.getName() + " = ");
+
+                            if (value == null) {
+                                System.out.println("null");
+
+                            } else if (value instanceof AstNode child) {
+
+                                int childId = getId(child);
+
+                                System.out.println(child.getClass().getSimpleName() + "#" + childId);
+                                print(child, indent + 2);
+
+                            } else {
+                                System.out.println(value.getClass().getSimpleName() + "#" + getId(value) + " = " + value);
+                            }
+
+                        } catch (IllegalAccessException e) {
+                            printIndent(indent + 1);
+                            System.out.println(field.getName() + " = < inaccessible >");
+                        }
+                     }
+
+                     clazz = clazz.getSuperclass();
+                }
         }
 
         private void printIndent(int count) {

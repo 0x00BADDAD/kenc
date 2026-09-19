@@ -219,8 +219,18 @@ public abstract class LR1Parser<T , U extends LexToken>{
             for(LR1item<T, U> it: currStates.get(idx).getItems()){
 
                 if(it.getStackTopIdx() < it.getProd().getRhs().size()){
-                    // shift/goto action
                     GramSymbol<U> transisym = it.getProd().getRhs().get(it.getStackTopIdx());
+
+                    // critical piece of code
+                    // we force on a state contaning LR1 item {Start -> Prog . $, EEOF} to have accept
+                    // for EOF token on stack instead of shift or goto action
+                    if(it.getStackTopIdx() == it.getProd().getRhs().size() - 1){
+                        if(it.getProd().getLhs().getValue().equals("Start") && !transisym.getIsNonTerm() && transisym.getSymbolToken().getName().equals("EOF")){
+                            currStates.get(idx).addAction(transisym, new Action.Accept());
+                            continue;
+                        }
+                    }
+                    // shift/goto action
                     List<LR1item<T, U>> itemlist = symToItems.getOrDefault(transisym, new ArrayList<>());
                     itemlist.add(new LR1item<>(it.getProd(), it.getStackTopIdx()+1, it.getLookahead()));
                     symToItems.put(transisym, itemlist);
@@ -231,12 +241,13 @@ public abstract class LR1Parser<T , U extends LexToken>{
                     GramSymbol<U> lookaheadsym = it.getLookahead();
 
 
-                    if(!lookaheadsym.getIsNonTerm() && lookaheadsym.getSymbolToken().getName().equals("EOF")){
+                    if(!lookaheadsym.getIsNonTerm() && lookaheadsym.getSymbolToken().getName().equals("EEOF") && it.getProd().getLhs().getValue().equals("Start")){
                         currStates.get(idx).addAction(lookaheadsym, new Action.Accept());
                     }else{
                         currStates.get(idx).addAction(lookaheadsym, new Action.Reduce(it.getProd()));
                     }
                 }
+
             }
             // for each of the List of the LR1items gathered. take closure of each of
             // these and see if it is a new LR1State, if it is then add it into this.states
@@ -346,7 +357,6 @@ public abstract class LR1Parser<T , U extends LexToken>{
         while(!currAccepted){
             // consume a token by the currStack
             U tok = this.tokens.get(currIdx);
-            System.out.println("currTok name: " + tok.getName() + " Content: " + tok.getContent());
             GramSymbol<U> gramSym = new GramSymbol<>(false, null);
             gramSym.setSymbolToken(tok);
 
@@ -359,7 +369,6 @@ public abstract class LR1Parser<T , U extends LexToken>{
             //System.out.printf("finding action for state: " + currState.toString() + "\n");
 
             if(action == null){
-                System.out.println("!!! Action not found!");
                 // error on currStack
                 // we have to insert, sub, del every tok possible in bet
                 // oldIdx and currIdx
@@ -755,6 +764,9 @@ outerdel:
                 currSymStack.push(new Pair<>(null, prod.getLhs()));
 
             } else if (action instanceof Action.Accept<?,?> accept) {
+
+                // push it into the window
+                window.addLast(new Pair<>(null, gramSym));
                 // accept
                 currAccepted = true;
             }
@@ -762,7 +774,6 @@ outerdel:
             // and update the old statestack and symstack
             // emit the AstNode from here for each reduction
             if(window.size() > windowSz){
-                System.out.println("never got into this loop");
                 GramSymbol<U> gramSymFront = window.removeFirst().second();
 
                 Action<T, U> action_ = oldStateStack.peek().getAction(gramSymFront);
@@ -788,8 +799,8 @@ outerdel:
         }
         // curr has accepted. we need to consume the tokens in the window.
         if(currAccepted && astFull == null){
-            System.out.println("was in the final window consumption loop");
             while(window.size() > 0){
+                //System.out.println("was in the final window consumption loop");
                 GramSymbol<U> gramSym = window.removeFirst().second();
 
                 Action<T, U> action_ = oldStateStack.peek().getAction(gramSym);
@@ -813,6 +824,7 @@ outerdel:
                     // should not come here ever.
                     astFull = oldSymStack.peek().first(); // Prog. $
                     oldAccepted = true;
+                    break;
                 }
             }
         }

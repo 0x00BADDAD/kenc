@@ -215,6 +215,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
 
                             stateStack.pop();
                             Pair<AstDecls, GramSymbol<LexToken>> declsSym = this.popAst(symStack);
+
                             AstDecls decls = declsSym.first();
                             AstDecl decl = declSym.first();
                             decls.addDecl(decl);

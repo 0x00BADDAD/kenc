@@ -205,6 +205,11 @@ public class KenlangParserTest{
             System.out.println("Error while parsing AST!!");
         }else{
             System.out.println("Ast has been parsed!!");
+            // print the ast
+            if(ast_res.first() == null){
+                System.out.println("No ast found!");
+            }
+            //(ast_res.first()).printNode();
         }
 
     }

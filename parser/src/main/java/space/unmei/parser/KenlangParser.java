@@ -199,11 +199,12 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                         (prod, stateStack, symStack)->{
                             // pop Decls
                             stateStack.pop();
-                            Pair<AstDecls, GramSymbol<LexToken>> progSym = this.popAst(symStack);
+                            Pair<AstDecls, GramSymbol<LexToken>> declsSym = this.popAst(symStack);
+                            AstProg prog = new AstProg(declsSym.first().pos, declsSym.first());
 
                             Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                             stateStack.push(gotoAct.state());
-                            symStack.push(new Pair<>(progSym.first(), prod.getLhs()));
+                            symStack.push(new Pair<>(prog, prod.getLhs()));
                         }
                         ),
                     new Pair<>(

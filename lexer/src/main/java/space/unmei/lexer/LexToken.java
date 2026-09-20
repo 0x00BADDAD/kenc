@@ -64,4 +64,9 @@ public class LexToken{
     public int hashCode() {
         return Objects.hash(name);
     }
+
+    @Override
+    public String toString(){
+        return "Name: " + this.name + " Content: " + this.content;
+    }
 }

@@ -292,6 +292,7 @@ public abstract class LR1Parser<T , U extends LexToken>{
             this.addValueToSym(tok.getName(), gramSym);
         }
 
+
         for(Pair<List<String>, ReduceAction<T, U>> prodPair: prodStrs){
             List<String> prod = prodPair.first();
             ReduceAction<T, U> supp = prodPair.second();
@@ -378,25 +379,37 @@ public abstract class LR1Parser<T , U extends LexToken>{
                 Integer tokIdx = null;
                 Integer opCode = -1; // 0 for sub, 1 for insert, 2 for delete
 
+                int winOrgSz = window.size();
+                System.out.println("Size of window before propping up: " + String.valueOf(window.size()));
                 // add toks from tok list starting from currIdx upto R (or till the end if its smaller)
-                for(int i = 1; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
+                for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
                     U tok_ = this.tokens.get(currIdx+i);
                     GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
                     gramSym_.setSymbolToken(tok_);
                     window.addLast(new Pair<>(null, gramSym_));
                 }
 
+                System.out.println("Size of window after propping up: " + String.valueOf(window.size()));
+
                 // try substitution
+                System.out.println("trying for substitution");
 outer_:
                 for(U candTok: this.tokSet){
+
+                    if(candTok.getName().equals("EOF")){continue;}
+
                     GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
                     candGramSym.setSymbolToken(candTok);
+                    System.out.println("trying symbol: " + candGramSym.toString());
 
                     ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
 
 outer:
                     while(it.hasNext()){
                         GramSymbol<U> nowSym = it.next().second();
+                        if(it.previousIndex() > winOrgSz){
+                            continue outer_;
+                        }
                         it.set(new Pair<>(null, candGramSym)); // edit the window
 
                         // now after subbing the gramSym with candGramSym
@@ -404,7 +417,11 @@ outer:
                         // currIdx upto 4 tokens.
                         Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
                         Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-                        for(Pair<T, GramSymbol<U>> nextSym_: window){
+
+                        // this loop is over the (edited) sequence of tokens over the "window"
+                        int currIdx_ = 0;
+                        while(currIdx_ < window.size()){
+                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T, U> st = cpy_oldStateStack.peek();
@@ -421,6 +438,8 @@ outer:
                                 cpy_oldStateStack.push(state);
                                 cpy_oldSymStack.push(new Pair<>(null, nextSym));
 
+                                currIdx_++;
+
                             } else if (ac instanceof Action.Reduce<?, ?> reAction) {
                                 GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
                                 // use prod
@@ -435,54 +454,92 @@ outer:
 
                             } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
-                                expectedTok = candTok; // found a token!! exit and
-                                opCode = 0;
-                                tokIdx = it.previousIndex();
+                                //System.out.println("was here in the inner loop of the substitution for cand tok");
+                                //System.out.println("cand tok: " + candTok.toString() + " tokIdx: " + String.valueOf(it.previousIndex()));
+                                //expectedTok = candTok; // found a token!! exit and
+                                //opCode = 0;
+                                //tokIdx = it.previousIndex();
                                 // no need to try insert and del
-                                break outer;
+
+                                // we need to try other position this is not good so we
+                                //it.set(new Pair<>(null, nowSym)); // restore window
+                                //continue outer;
+                                break;
                             }
                         }
                         it.set(new Pair<>(null, nowSym)); // restore window
 
                         // if we came here then we found a candTok
-                        expectedTok = candTok; // found a token!! exit and
-                        opCode = 0;
-                        tokIdx = it.previousIndex();
-                        break outer_;
+                        System.out.println("was here at the end of loop of the substitution for cand tok");
+                        if(currIdx_ >= window.size() - 1){
+                            expectedTok = candTok; // found a token!! exit and
+                            opCode = 0;
+                            tokIdx = it.previousIndex();
+                            if(tokIdx == winOrgSz){
+                                currIdx++;
+                            }
+                            break outer_;
+                        }else{
+                            continue outer;
+                        }
                     }
                 }
 
                 // try insertion
                 if(expectedTok == null){
+                    System.out.println("trying for insertion");
 outerinsert_:
                     for(U candTok: this.tokSet){
+                        if(candTok.getName().equals("EOF")){continue;}
                         GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
                         candGramSym.setSymbolToken(candTok);
 
                         ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
+                        System.out.println("Size of window before insert: " + String.valueOf(window.size())+ " and the candTok is: " + candTok.toString());
 
 outerinsert:
                         while(it.hasNext()){
                             GramSymbol<U> nowSym = it.next().second();
+
+
+                            if(it.previousIndex() > winOrgSz){
+                                continue outerinsert_;
+                            }
+
                             Integer insertIdx = it.previousIndex();
                             it.add(new Pair<>(null, candGramSym)); // edit the window by inserting the candTok
+
+                            System.out.println("prospective tok list is: ");
+                            if(it.previousIndex() == 4){
+                                for(Pair<T, GramSymbol<U>> p: window){
+                                    System.out.println(p.second().getSymbolToken().toString());
+                                }
+                            }
+
+                            System.out.println("Size of window after inserting a candTok: " + window.size() + " and at index: " + insertIdx);
 
                             // now after subbing the gramSym with candGramSym
                             // we try to see if the cpy_oldSymStack can go beyond the
                             // currIdx upto 4 tokens.
                             Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
                             Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-                            for(Pair<T, GramSymbol<U>> nextSym_: window){
+
+                            // this loop is over the (edited) sequence of tokens over the "window"
+                            int currIdx_ = 0;
+                            while(currIdx_ < window.size()){
+                                Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
+                            //for(Pair<T, GramSymbol<U>> nextSym_: window){
                                 GramSymbol<U> nextSym = nextSym_.second();
 
                                 LR1State<T,U> st = cpy_oldStateStack.peek();
                                 Action<T, U> ac = st.getAction(nextSym);
 
                                 if(ac == null){
-                                    it.next(); it.remove(); // restore window
+                                    it.previous(); it.remove(); // restore window
                                     continue outerinsert;
                                 }
                                 if (ac instanceof Action.Shift<?,?> shAction) {
+                                    currIdx_++;
                                     LR1State<T,U> state = (LR1State<T, U>) shAction.state();
                                     // use state
                                     cpy_oldStateStack.push(state);
@@ -490,38 +547,50 @@ outerinsert:
 
                                 } else if (ac instanceof Action.Reduce<?,?> reAction) {
                                     GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
+
                                     // use prod
                                     for(GramSymbol<U> rhsSym: prod.getRhs()){
                                         cpy_oldSymStack.pop();
                                         cpy_oldStateStack.pop();
                                     }
+
                                     // warning: here assuming gotoAct will always shift
                                     Action.Shift<T, U> gotoAct = (Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
                                     cpy_oldStateStack.push(gotoAct.state());
                                     cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
 
                                 } else if (ac instanceof Action.Accept<?,?> acAction) {
+                                    //System.out.println("here in the accepted branch in insert for tok: " + candTok.toString() + " tokIdx: " + insertIdx);
                                     // accept
-                                    expectedTok = candTok; // found a token!! exit and
-                                    opCode = 1;
-                                    tokIdx = insertIdx;
+                                    //expectedTok = candTok; // found a token!! exit and
+                                    //opCode = 1;
+                                    //tokIdx = insertIdx;
                                     // no need to try insert and del
-                                    break outerinsert;
+                                    //it.previous(); it.remove(); // restore the window by deleting the tok
+                                    //continue outerinsert;
+                                    break;
                                 }
                             }
-                            it.next(); it.remove(); // restore the window by deleting the tok
+                            it.previous(); it.remove(); // restore the window by deleting the tok
+                            if(currIdx_ >= window.size() - 1){
 
-                            // if we came here then we found a candTok
-                            expectedTok = candTok; // found a token!! exit and
-                            opCode = 1;
-                            tokIdx = insertIdx;
-                            break outerinsert_;
+                                System.out.println("Found a candTok by insertion and it is: " + candTok.toString());
+
+                                // if we came here then we found a candTok
+                                expectedTok = candTok; // found a token!! exit and
+                                opCode = 1;
+                                tokIdx = insertIdx+1;
+                                break outerinsert_;
+                            }else{
+                                continue outerinsert;
+                            }
                         }
                     }
                 }
 
                 // try deletion
                 if(expectedTok == null){
+                        System.out.println("WE TRIED DELETING ASW!!!!!!");
                         ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
 outerdel:
                     while(it.hasNext()){
@@ -580,14 +649,17 @@ outerdel:
                     }
                 }
 
+                System.out.println("Came out of the rec loop with value opCode: " + String.valueOf(opCode));
+
                 // bringing back the size of window to its normal size
-                for(int i = 0; i < Math.min(R, this.tokens.size()-currIdx-1); i++){
+                for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
                     window.removeLast();
                 }
 
                 switch(opCode){
                     case 0: {
-                        currIdx++;
+                        System.out.println("************************************was here in the opCode=0 branch with expected tok: " + expectedTok.toString());
+                        //currIdx++;
 
                         GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
                         gramSym_.setSymbolToken(expectedTok);
@@ -638,17 +710,28 @@ outerdel:
                         continue;
                     }
                     case 1: {
-                        currIdx++;
+                        System.out.println("-----------------------------------------was here in opcode value 1");
+                        //currIdx++;
 
                         GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
-                        gramSym.setSymbolToken(expectedTok);
+                        gramSym_.setSymbolToken(expectedTok);
+
+                        System.out.println("Size of window before adding tok: " + String.valueOf(window.size()) + " and at tokIdx: " + String.valueOf(tokIdx));
 
                         window.add(tokIdx, new Pair<>(null, gramSym_));
+
+                        System.out.println("Size of window after adding tok: " + String.valueOf(window.size()) + " and the tok is: " + expectedTok.toString());
+                        for(Pair<T, GramSymbol<U>> p: window){
+                            System.out.println(p.second().getSymbolToken().toString());
+                        }
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);
 
-                        for(Pair<T, GramSymbol<U>> nextSym_: window){
+                        int currIdx_ = 0;
+                        while(currIdx_ < window.size()){
+                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
+                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = currStateStack.peek();
@@ -659,6 +742,7 @@ outerdel:
                             }
 
                             if (ac instanceof Action.Shift<?,?> shAction) {
+                                currIdx_++;
                                 LR1State<T,U> state = (LR1State<T,U>) shAction.state();
                                 // use state
                                 currStateStack.push(state);
@@ -679,8 +763,10 @@ outerdel:
                             } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 currAccepted = true;
+                                break;
                             }
                         }
+                        System.out.println("consumed the edited window by currStateStacka nd currSymStack");
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
                                 tok.getColNo(),
                                 expectedTok,
@@ -689,7 +775,7 @@ outerdel:
                         continue;
                     }
                     case 2: {
-                        currIdx++;
+                        //currIdx++;
 
                         window.remove(tokIdx);
 

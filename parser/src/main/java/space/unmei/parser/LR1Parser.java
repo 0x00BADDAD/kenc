@@ -395,7 +395,6 @@ public abstract class LR1Parser<T , U extends LexToken>{
                 System.out.println("trying for substitution");
 outer_:
                 for(U candTok: this.tokSet){
-
                     if(candTok.getName().equals("EOF")){continue;}
 
                     GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
@@ -472,6 +471,11 @@ outer:
                         // if we came here then we found a candTok
                         System.out.println("was here at the end of loop of the substitution for cand tok");
                         if(currIdx_ >= window.size() - 1){
+                            System.out.println("Sub list is:");
+                            for(Pair<T, GramSymbol<U>> p: window){
+                                System.out.println(p.second().getSymbolToken().toString());
+                            }
+
                             expectedTok = candTok; // found a token!! exit and
                             opCode = 0;
                             tokIdx = it.previousIndex();
@@ -580,6 +584,7 @@ outerinsert:
                                 expectedTok = candTok; // found a token!! exit and
                                 opCode = 1;
                                 tokIdx = insertIdx+1;
+
                                 break outerinsert_;
                             }else{
                                 continue outerinsert;
@@ -597,12 +602,21 @@ outerdel:
                         Pair<T, GramSymbol<U>> nowSym = it.next();
                         Integer delIdx = it.previousIndex();
 
+                        if(delIdx > winOrgSz){
+                            break outerdel;
+                        }
+
                         it.remove(); // edit the window by removing a tok
                                      // we try to see if the cpy_oldSymStack can go beyond the
                                      // currIdx upto 4 tokens.
                         Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
                         Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-                        for(Pair<T, GramSymbol<U>> nextSym_: window){
+
+                        int currIdx_ = 0;
+
+                        while(currIdx_ < window.size()){
+                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
+                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = cpy_oldStateStack.peek();
@@ -612,7 +626,9 @@ outerdel:
                                 it.add(nowSym); // restore window
                                 continue outerdel;
                             }
+
                             if (ac instanceof Action.Shift<?,?> shAction) {
+                                currIdx_++;
                                 LR1State<T, U> state = (LR1State<T, U>) shAction.state();
                                 // use state
                                 cpy_oldStateStack.push(state);
@@ -632,20 +648,25 @@ outerdel:
 
                             } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
-                                expectedTok = null; // no token in case of del
-                                opCode = 2;
-                                tokIdx = delIdx;
+                                //expectedTok = null; // no token in case of del
+                                //opCode = 2;
+                                //tokIdx = delIdx;
                                 // no need to try insert and del
-                                break outerdel;
+                                break;
                             }
                         }
-                        it.add(nowSym); // restore the window by adding the deleted tok
 
                         // if we came here then we found a candTok
-                        expectedTok = null; // found a token!! exit and
-                        opCode = 2;
-                        tokIdx = delIdx;
-                        break outerdel;
+                        if(currIdx_ >= window.size() - 1){
+                            it.add(nowSym); // restore the window by adding the deleted tok
+                            expectedTok = null; // found a token!! exit and
+                            opCode = 2;
+                            tokIdx = delIdx;
+                            break outerdel;
+                        }else{
+                            it.add(nowSym); // restore the window by adding the deleted tok
+                            continue outerdel;
+                        }
                     }
                 }
 
@@ -669,7 +690,10 @@ outerdel:
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);
 
-                        for(Pair<T, GramSymbol<U>> nextSym_: window){
+                        int currIdx_ = 0;
+                        while(currIdx_ < window.size()){
+                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
+                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = currStateStack.peek();
@@ -680,6 +704,7 @@ outerdel:
                             }
 
                             if (ac instanceof Action.Shift<?,?> shAction) {
+                                currIdx_++;
                                 LR1State<T,U> state = (LR1State<T, U>) shAction.state();
                                 // use state
                                 currStateStack.push(state);
@@ -700,6 +725,7 @@ outerdel:
                             } else if (ac instanceof Action.Accept<?,?> acAction) {
                                 // accept
                                 currAccepted = true;
+                                break;
                             }
                         }
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
@@ -776,13 +802,24 @@ outerdel:
                     }
                     case 2: {
                         //currIdx++;
+                        for(Pair<T, GramSymbol<U>> p: window){
+                            System.out.println(p.second().getSymbolToken().toString());
+                        }
+                        System.out.println("opCode=2 we were here in the delete branch tokIdx: " + String.valueOf(tokIdx));
+                        window.remove(tokIdx.intValue());
 
-                        window.remove(tokIdx);
+                        for(Pair<T, GramSymbol<U>> p: window){
+                            System.out.println(p.second().getSymbolToken().toString());
+                        }
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);
 
-                        for(Pair<T, GramSymbol<U>> nextSym_: window){
+                        int currIdx_ = 0;
+
+                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
+                        while(currIdx_ < window.size()){
+                            Pair<T, GramSymbol<U>> nextSym_= window.get(currIdx_);
                             GramSymbol<U> nextSym = nextSym_.second();
 
                             LR1State<T,U> st = currStateStack.peek();
@@ -793,6 +830,8 @@ outerdel:
                             }
 
                             if (ac instanceof Action.Shift<?, ?> shAction) {
+                                currIdx_++;
+
                                 LR1State<T,U> state = (LR1State<T, U>)shAction.state();
                                 // use state
                                 currStateStack.push(state);
@@ -813,6 +852,7 @@ outerdel:
                             } else if (ac instanceof Action.Accept<?, ?> acAction) {
                                 // accept
                                 currAccepted = true;
+                                break;
                             }
                         }
                         ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),

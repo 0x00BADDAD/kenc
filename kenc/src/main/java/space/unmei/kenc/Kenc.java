@@ -155,11 +155,15 @@ public class Kenc {
         tok3.setLineNo(1);
         tok3.setColNo(6);
 
+        LexToken tok3_5 = new LexToken("ASSIGN", "=");
+        tok3_5.setLineNo(1);
+        tok3_5.setColNo(7);
+
         LexToken tok4 = new LexToken("NUM", "3");
         tok4.setLineNo(1);
         tok4.setColNo(8);
 
-        LexToken tok5 = new LexToken("FUNC", "func");
+        LexToken tok5 = new LexToken("SEMI_COLON", ";");
         tok5.setLineNo(1);
         tok5.setColNo(9);
 
@@ -194,7 +198,7 @@ public class Kenc {
         //tok11.setColNo(11);
 
         // temp tok array
-        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok5, tok11));
+        List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok3_5, tok4, tok5, tok11));
 
         KenlangParser lr1parser = new KenlangParser();
         lr1parser.setup();

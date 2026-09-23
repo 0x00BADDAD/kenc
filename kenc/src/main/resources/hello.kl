@@ -7,13 +7,13 @@ type struct_type = {name: string, addr: string, car: string};
 
 func test(input : struct_type) : string {
 
-    var ret_val = if(input.name == "hank" and
-                     input.addr == "rainy_street" and
+    var ret_val = if(input.name == "hank" &&
+                     input.addr == "rainy_street" &&
                      input.car =="pickup_truck"
                     ){
-                        "success";
+                        "success"
                      }else{
-                        "no_match";
+                        "no_match"
                      };
 
     return ret_val;
@@ -23,19 +23,19 @@ func main(args : array of string) : int32{
 
     var n : int32 = arr_len(args);
     print("out", n);
-    print("out", "\n");
+    print("out", "n");
     print("out", "Hello Kenlang");
-    print("out", "\n");
+    print("out", "n");
 
-    for(int32 idx = 0; idx < n; idx++){
+    for(var idx: int32 = 0; idx < n; idx=idx+1){
         print("out", args[idx]);
-        print("out", "\n");
+        print("out", "n");
         if(idx > 1){
             break;
         }
     }
 
-    var my_struct : struct_type = struct_type{name = args[0], addr=args[1], car=args[2]};
+    var my_struct : struct_type = new struct_type{name = args[0], addr=args[1], car=args[2]};
     var status : string = test(my_struct);
     print("out", status);
 

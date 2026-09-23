@@ -45,7 +45,12 @@ public abstract class LR1Parser<T , U extends LexToken>{
 
     public void setTokens(List<U> tokens){
         // TODO: filter out the WHITESPACE tokens from the list of `tokens`
-        this.tokens = tokens;
+        List<U> tokNoWs = new ArrayList<>();
+        for(U tok: tokens){
+            if(tok.getName().equals("WHITESPACE")){continue;}
+            tokNoWs.add(tok);
+        }
+        this.tokens = tokNoWs;
     }
 
     private LR1State<T, U> stateExists(LR1State<T, U> state){

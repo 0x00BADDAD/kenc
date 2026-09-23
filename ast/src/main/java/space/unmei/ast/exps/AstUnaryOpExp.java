@@ -11,7 +11,7 @@ public class AstUnaryOpExp extends AstExp{
 
     public AstUnaryOpExp(Pos pos, AstType ty, AstUnaryOpType op, AstExp right){
         super(pos, ty);
-        this.pos = pos;
+        this.op = op;
         this.right = right;
     }
 }

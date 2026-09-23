@@ -12,6 +12,9 @@ import java.io.Reader;
 import space.unmei.regex.RegexParser;
 import space.unmei.regex.RegexLexer;
 
+import space.unmei.regex.RegexLexer;
+import space.unmei.regex.RegexParser;
+
 import space.unmei.lexer.FinalNfa;
 import space.unmei.lexer.Dfa;
 import space.unmei.lexer.Lexer;
@@ -30,11 +33,9 @@ public class Kenc {
         RegexParser parser = new RegexParser();
         boolean parSetup = parser.setup();
         System.out.println(parSetup + "\n");
-        //assertEquals(parSetup, true);
 
         parSetup = parser.setup();
 
-        //assertEquals(parSetup, true);
 
         FinalNfa finalNfa = new FinalNfa();
 
@@ -73,7 +74,9 @@ public class Kenc {
         // Arithmetic operators (priority 700)
         finalNfa.addNfa(parser.runParse(new RegexLexer("=").lex()), "ASSIGN", 700);
         finalNfa.addNfa(parser.runParse(new RegexLexer("\\+").lex()), "PLUS", 700);
+        finalNfa.addNfa(parser.runParse(new RegexLexer("\\+\\+").lex()), "INC_PLUS", 700);
         finalNfa.addNfa(parser.runParse(new RegexLexer("-").lex()), "MINUS", 700);
+        finalNfa.addNfa(parser.runParse(new RegexLexer("--").lex()), "DEC_MINUS", 700);
         finalNfa.addNfa(parser.runParse(new RegexLexer("/").lex()), "DIV", 700);
         finalNfa.addNfa(parser.runParse(new RegexLexer("\\*").lex()), "MUL", 700);
         finalNfa.addNfa(parser.runParse(new RegexLexer("%").lex()), "MOD", 700);
@@ -142,8 +145,6 @@ public class Kenc {
             }
         }
 
-        System.out.println("lexing done successfully!");
-
 
         // LexToken("VAR", "var");
         //LexToken tok1 = new LexToken("VAR", "var");
@@ -158,9 +159,9 @@ public class Kenc {
         //tok3.setLineNo(1);
         //tok3.setColNo(6);
 
-        ////LexToken tok3_5 = new LexToken("ASSIGN", "=");
-        ////tok3_5.setLineNo(1);
-        ////tok3_5.setColNo(7);
+        //LexToken tok3_5 = new LexToken("ASSIGN", "=");
+        //tok3_5.setLineNo(1);
+        //tok3_5.setColNo(7);
 
         //LexToken tok4 = new LexToken("NUM", "3");
         //tok4.setLineNo(1);
@@ -201,7 +202,7 @@ public class Kenc {
         //tok11.setColNo(11);
 
         // temp tok array
-        //List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok4, tok5, tok11));
+        //List<LexToken> toks = new ArrayList<>(List.of(tok1, tok2, tok3, tok3_5, tok4, tok5, tok11));
 
         KenlangParser lr1parser = new KenlangParser();
         lr1parser.setup();

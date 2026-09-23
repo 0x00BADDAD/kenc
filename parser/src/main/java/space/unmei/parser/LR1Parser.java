@@ -45,12 +45,12 @@ public abstract class LR1Parser<T , U extends LexToken>{
 
     public void setTokens(List<U> tokens){
         // TODO: filter out the WHITESPACE tokens from the list of `tokens`
-        List<U> tokNoWs = new ArrayList<>();
+        List<U> tokens_ = new ArrayList<>();
         for(U tok: tokens){
             if(tok.getName().equals("WHITESPACE")){continue;}
-            tokNoWs.add(tok);
+            tokens_.add(tok);
         }
-        this.tokens = tokNoWs;
+        this.tokens = tokens_;
     }
 
     private LR1State<T, U> stateExists(LR1State<T, U> state){
@@ -387,7 +387,7 @@ public abstract class LR1Parser<T , U extends LexToken>{
                 int winOrgSz = window.size();
                 System.out.println("Size of window before propping up: " + String.valueOf(window.size()));
                 // add toks from tok list starting from currIdx upto R (or till the end if its smaller)
-                for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
+                for(int i = 1; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
                     U tok_ = this.tokens.get(currIdx+i);
                     GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
                     gramSym_.setSymbolToken(tok_);
@@ -485,6 +485,13 @@ outer:
                             opCode = 0;
                             tokIdx = it.previousIndex();
                             if(tokIdx == winOrgSz){
+
+                                GramSymbol<U> candGramSym_ = new GramSymbol<>(false, null);
+                                candGramSym_.setSymbolToken(candTok);
+
+                                window.add(new Pair<>(null, candGramSym_));
+
+                                winOrgSz++;
                                 currIdx++;
                             }
                             break outer_;
@@ -677,10 +684,13 @@ outerdel:
 
                 System.out.println("Came out of the rec loop with value opCode: " + String.valueOf(opCode));
 
-                // bringing back the size of window to its normal size
-                for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
+                while(window.size() > winOrgSz){
                     window.removeLast();
                 }
+                // bringing back the size of window to its normal size
+                //for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
+                //    window.removeLast();
+                //}
 
                 switch(opCode){
                     case 0: {
@@ -690,7 +700,16 @@ outerdel:
                         GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
                         gramSym_.setSymbolToken(expectedTok);
 
-                        window.set(tokIdx, new Pair<>(null, gramSym_));
+
+                        if(tokIdx == window.size()){
+                            this.tokens.set(currIdx, expectedTok);
+                        }else{
+                            window.set(tokIdx, new Pair<>(null, gramSym_));
+                        }
+
+                        for(Pair<T, GramSymbol<U>> p: window){
+                            System.out.println(p.second().getSymbolToken().toString());
+                        }
 
                         currStateStack = new ArrayDeque<>(oldStateStack);
                         currSymStack = new ArrayDeque<>(oldSymStack);

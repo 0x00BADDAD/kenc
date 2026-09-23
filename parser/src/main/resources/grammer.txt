@@ -75,6 +75,7 @@ Unary
     | MINUS Unary
     | Primary
 
+
 Primary
     -> NUM
     | STRING_LIT
@@ -110,10 +111,14 @@ Stmt -> While
 Stmt -> For
 Stmt -> VarDec SEMI_COLON
 Stmt -> VarDecInit SEMI_COLON
+Stmt -> Post SEMI_COLON
 Stmt -> TypeDec SEMI_COLON
 Stmt -> BreakStmt
 Stmt -> ContinueStmt
 Stmt -> Return
+
+Post -> Lvalue INC_PLUS
+    | Lvalue DEC_MINUS
 
 Return -> RETURN Exp SEMI_COLON
 BreakStmt -> BREAK SEMI_COLON
@@ -175,4 +180,5 @@ ForThirdList ->
 
 ForThird ->
     Assign
+   | Post
 

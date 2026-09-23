@@ -27,11 +27,11 @@ func main(args : array of string) : int32{
     print("out", "Hello Kenlang");
     print("out", "n");
 
-    for(var idx: int32 = 0; idx < n; idx=idx+1){
+    for(var idx: int32 = 0; idx < n; idx++){
         print("out", args[idx]);
         print("out", "n");
         if(idx > 1){
-            break;
+            break
         }
     }
 

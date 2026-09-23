@@ -51,6 +51,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "Decls",
             "Decl",
             "VarDecInit",
+            "Post",
             "VarDec",
             "TypeDec",
             "TypeVal",
@@ -137,7 +138,9 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                     new LexToken("DIS", "|"),
 
                     new LexToken("PLUS", "+"),
+                    new LexToken("INC_PLUS", "++"),
                     new LexToken("MINUS", "-"),
+                    new LexToken("DEC_MINUS", "--"),
                     new LexToken("MUL", "*"),
                     new LexToken("DIV", "/"),
                     new LexToken("MOD", "%"),
@@ -1359,10 +1362,12 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 stateStack.pop();
                                 LexToken semiColTok = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
-                                Pair<AstVarDecStmt, GramSymbol<LexToken>> varDecStmt = this.popAst(symStack);
+                                Pair<AstVarDec, GramSymbol<LexToken>> varDecSym = this.popAst(symStack);
+                                AstVarDecStmt stmt = new AstVarDecStmt(varDecSym.first().pos, varDecSym.first());
+
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
-                                symStack.push(new Pair<>(varDecStmt.first(), prod.getLhs()));
+                                symStack.push(new Pair<>(stmt, prod.getLhs()));
                             }
                             ),
                     new Pair<>(
@@ -1373,11 +1378,11 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 stateStack.pop();
                                 Pair<AstVarDecInit, GramSymbol<LexToken>> varDecInitSym = this.popAst(symStack);
 
-                                AstVarDecInitStmt vdiStmt = new AstVarDecInitStmt(varDecInitSym.first().pos, varDecInitSym.first());
+                                AstVarDecInitStmt stmt = new AstVarDecInitStmt(varDecInitSym.first().pos, varDecInitSym.first());
 
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
-                                symStack.push(new Pair<>(vdiStmt, prod.getLhs()));
+                                symStack.push(new Pair<>(stmt, prod.getLhs()));
                             }
                             ),
                     new Pair<>(
@@ -1386,10 +1391,11 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 stateStack.pop();
                                 LexToken semiColTok = symStack.pop().second().getSymbolToken();
                                 stateStack.pop();
-                                Pair<AstTypeDecStmt, GramSymbol<LexToken>> typeDecStmt = this.popAst(symStack);
+                                Pair<AstTypeDec, GramSymbol<LexToken>> typeDecSym = this.popAst(symStack);
+                                AstTypeDecStmt stmt = new AstTypeDecStmt(typeDecSym.first().pos, typeDecSym.first());
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
-                                symStack.push(new Pair<>(typeDecStmt.first(), prod.getLhs()));
+                                symStack.push(new Pair<>(stmt, prod.getLhs()));
                             }
                             ),
                     new Pair<>(
@@ -1420,6 +1426,48 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
                                 symStack.push(new Pair<>(retStmt.first(), prod.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Stmt", "Post", "SEMI_COLON"),
+                            (prod, stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken semiColTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstPost, GramSymbol<LexToken>> postSym = this.popAst(symStack);
+                                AstPostStmt stmt = new AstPostStmt(postSym.first().pos, postSym.first());
+
+                                Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(stmt, prod.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Post", "Lvalue", "INC_PLUS"),
+                            (prod, stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken incPlusTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = this.popAst(symStack);
+                                AstPost post = new AstPost(lvalSym.first().pos, lvalSym.first(), AstPostOpType.INC_PLUS);
+
+                                Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(post, prod.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("Post", "Lvalue", "DEC_MINUS"),
+                            (prod, stateStack, symStack)->{
+                                stateStack.pop();
+                                LexToken decMinusTok = symStack.pop().second().getSymbolToken();
+                                stateStack.pop();
+                                Pair<AstLvalueExp, GramSymbol<LexToken>> lvalSym = this.popAst(symStack);
+                                AstPost post = new AstPost(lvalSym.first().pos, lvalSym.first(), AstPostOpType.DEC_MINUS);
+
+                                Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(post, prod.getLhs()));
                             }
                             ),
                     new Pair<>(
@@ -2037,13 +2085,26 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
                             (prod, stateStack, symStack)->{
                                 stateStack.pop();
                                 Pair<AstAssign, GramSymbol<LexToken>> assignSym = this.popAst(symStack);
-                                AstForThird forThird = new AstForThird(assignSym.first().pos, assignSym.first());
+                                AstForThird forThird = new AstForThird(assignSym.first().pos, assignSym.first(), null);
+
+                                Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
+                                stateStack.push(gotoAct.state());
+                                symStack.push(new Pair<>(forThird, prod.getLhs()));
+                            }
+                            ),
+                    new Pair<>(
+                            List.of("ForThird", "Post"),
+                            (prod, stateStack, symStack)->{
+                                stateStack.pop();
+                                Pair<AstPost, GramSymbol<LexToken>> postSym = this.popAst(symStack);
+                                AstForThird forThird = new AstForThird(postSym.first().pos, null, postSym.first());
 
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
                                 symStack.push(new Pair<>(forThird, prod.getLhs()));
                             }
                             )
+
                     )
                 );
 

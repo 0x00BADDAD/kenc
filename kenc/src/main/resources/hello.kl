@@ -31,7 +31,6 @@ func main(args : array of string) : int32{
         print("out", args[idx]);
         print("out", "n");
         if(idx > 1){
-            break
         }
     }
 

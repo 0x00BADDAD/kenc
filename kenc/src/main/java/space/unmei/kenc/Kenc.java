@@ -209,9 +209,13 @@ public class Kenc {
         lr1parser.setTokens(toks);
 
         Pair<AstNode, List<ParseErr<LexToken>>> ast_res = lr1parser.parse();
+        List<ParseErr<LexToken>> errs = ast_res.second();
 
-        if(ast_res.second().size() > 0){
-            System.out.println("Error while parsing AST!!");
+        if(errs.size() > 0){
+            System.out.println("Error while parsing AST!! Erros at tokens:");
+            for(ParseErr<LexToken> e: errs){
+                System.out.println("err is: " + e.getErrTok().toString());
+            }
         }else{
             System.out.println("Ast has been parsed!!");
             // print the ast
@@ -223,7 +227,7 @@ public class Kenc {
             System.out.println("---------------------------------------------------");
             System.out.println("---------------------------------------------------");
             System.out.println("---------------------------------------------------");
-            (ast_res.first()).printNode();
+            (ast_res.first()).printNode(0);
         }
 
     }

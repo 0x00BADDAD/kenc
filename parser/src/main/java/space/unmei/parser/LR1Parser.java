@@ -22,6 +22,8 @@ public abstract class LR1Parser<T , U extends LexToken>{
 
     private List<U> tokSet; // set of unique tokens
 
+    private Map<U, Boolean> syncToks; // set of sync tokens for panic recovery
+
     private List<U> tokens = new ArrayList<>(); // list of lexed tokens
 
     private Set<LR1State<T, U>> states = new HashSet<>();
@@ -278,7 +280,9 @@ public abstract class LR1Parser<T , U extends LexToken>{
 
     }
 
-    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, ReduceAction<T, U>>> prodStrs, GramSymbol<U> extraEof){
+    protected void setup_(String[] nonTermSyms, List<U> termSyms, List<Pair<List<String>, ReduceAction<T, U>>> prodStrs, GramSymbol<U> extraEof, Map<U, Boolean> syncToks){
+
+        this.syncToks = syncToks;
 
         this.tokSet = termSyms;
 
@@ -326,6 +330,43 @@ public abstract class LR1Parser<T , U extends LexToken>{
     }
 
 
+    private Pair<Integer, Action<T, U>> panicRec(int currIdx, Deque<LR1State<T,U>> stateStack, Deque<Pair<T, GramSymbol<U>>> symStack){
+
+        // at currIdx err has been found
+        // discard tokens until the first sync token is seen
+        // pop the LR1 states until we have a non-null action for that sync token lookahead
+        while(currIdx < this.tokens.size()){
+            if(this.syncToks.containsKey(this.tokens.get(currIdx))){
+                break;
+            }
+            currIdx++;
+        }
+
+        if(currIdx == this.tokens.size()){
+            // no sync tokens found!! stop parsing!
+            return new Pair<>(Integer.valueOf(-1), null);
+
+        }
+
+        // found a sync token
+        while(!stateStack.isEmpty()){
+            GramSymbol<U> candGram = new GramSymbol(false, null);
+            candGram.setSymbolToken(this.tokens.get(currIdx));
+
+            Action<T, U> action = stateStack.peek().getAction(candGram);
+
+            if(action != null){
+                // found a state that has action for this sync Token
+                return new Pair<>(Integer.valueOf(currIdx), action);
+            }else{
+                stateStack.pop();
+                symStack.pop();
+            }
+        }
+
+        // if we are here that means all states are popped and pasring si not possible
+        return new Pair<>(Integer.valueOf(-1), null);
+    }
 
 
     public Pair<T, List<ParseErr<U>>> parse(){
@@ -339,16 +380,22 @@ public abstract class LR1Parser<T , U extends LexToken>{
         // this is the burke-fisher err rec.
         // the currStack(s) only execute action and change states but don't really
         // perform any kind of actions.
+
         Deque<LR1State<T,U>> oldStateStack = new ArrayDeque<>();
+
         // in the pair `Pair<T, GramSymbol<U>>` the first element is the
         // semantic value for that non term sym
         // and that value is only active in oldSymStack
+
         Deque<Pair<T, GramSymbol<U>>> oldSymStack = new ArrayDeque<>();
         oldStateStack.push(this.startState);
 
         Deque<LR1State<T,U>> currStateStack = new ArrayDeque<>();
         Deque<Pair<T, GramSymbol<U>>> currSymStack = new ArrayDeque<>();
+
         currStateStack.push(this.startState);
+
+        currSymStack.push(new Pair<>(null, null)); // dummy sym to supprt panic rec
 
         // window is a LinkedList instead of a queue since we need to edit it
         LinkedList<Pair<T, GramSymbol<U>>> window = new LinkedList<>();
@@ -375,517 +422,27 @@ public abstract class LR1Parser<T , U extends LexToken>{
             //System.out.printf("finding action for state: " + currState.toString() + "\n");
 
             if(action == null){
-                // error on currStack
-                // we have to insert, sub, del every tok possible in bet
-                // oldIdx and currIdx
-
-                // we need to find the expected tok by either sub or insert
-                U expectedTok = null;
-                Integer tokIdx = null;
-                Integer opCode = -1; // 0 for sub, 1 for insert, 2 for delete
-
-                int winOrgSz = window.size();
-                System.out.println("Size of window before propping up: " + String.valueOf(window.size()));
-                // add toks from tok list starting from currIdx upto R (or till the end if its smaller)
-                for(int i = 1; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
-                    U tok_ = this.tokens.get(currIdx+i);
-                    GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
-                    gramSym_.setSymbolToken(tok_);
-                    window.addLast(new Pair<>(null, gramSym_));
-                }
-
-                System.out.println("Size of window after propping up: " + String.valueOf(window.size()));
-
-                // try substitution
-                System.out.println("trying for substitution");
-outer_:
-                for(U candTok: this.tokSet){
-                    if(candTok.getName().equals("EOF")){continue;}
-
-                    GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
-                    candGramSym.setSymbolToken(candTok);
-                    System.out.println("trying symbol: " + candGramSym.toString());
-
-                    ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
-
-outer:
-                    while(it.hasNext()){
-                        GramSymbol<U> nowSym = it.next().second();
-                        if(it.previousIndex() > winOrgSz){
-                            continue outer_;
-                        }
-                        it.set(new Pair<>(null, candGramSym)); // edit the window
-
-                        // now after subbing the gramSym with candGramSym
-                        // we try to see if the cpy_oldSymStack can go beyond the
-                        // currIdx upto 4 tokens.
-                        Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
-                        Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-
-                        // this loop is over the (edited) sequence of tokens over the "window"
-                        int currIdx_ = 0;
-                        while(currIdx_ < window.size()){
-                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
-                            GramSymbol<U> nextSym = nextSym_.second();
-
-                            LR1State<T, U> st = cpy_oldStateStack.peek();
-
-                            Action<T, U> ac = st.getAction(nextSym);
-
-                            if(ac == null){
-                                it.set(new Pair<>(null, nowSym)); // restore window
-                                continue outer;
-                            }
-                            if (ac instanceof Action.Shift<?, ?> shAction) {
-                                LR1State<T, U> state = (LR1State<T, U>) shAction.state();
-                                // use state
-                                cpy_oldStateStack.push(state);
-                                cpy_oldSymStack.push(new Pair<>(null, nextSym));
-
-                                currIdx_++;
-
-                            } else if (ac instanceof Action.Reduce<?, ?> reAction) {
-                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
-                                // use prod
-                                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                    cpy_oldSymStack.pop();
-                                    cpy_oldStateStack.pop();
-                                }
-                                // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct = (Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
-                                cpy_oldStateStack.push(gotoAct.state());
-                                cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                            } else if (ac instanceof Action.Accept<?,?> acAction) {
-                                // accept
-                                //System.out.println("was here in the inner loop of the substitution for cand tok");
-                                //System.out.println("cand tok: " + candTok.toString() + " tokIdx: " + String.valueOf(it.previousIndex()));
-                                //expectedTok = candTok; // found a token!! exit and
-                                //opCode = 0;
-                                //tokIdx = it.previousIndex();
-                                // no need to try insert and del
-
-                                // we need to try other position this is not good so we
-                                //it.set(new Pair<>(null, nowSym)); // restore window
-                                //continue outer;
-                                break;
-                            }
-                        }
-                        it.set(new Pair<>(null, nowSym)); // restore window
-
-                        // if we came here then we found a candTok
-                        System.out.println("was here at the end of loop of the substitution for cand tok");
-                        if(currIdx_ >= window.size() - 1){
-                            System.out.println("Sub list is:");
-                            for(Pair<T, GramSymbol<U>> p: window){
-                                System.out.println(p.second().getSymbolToken().toString());
-                            }
-
-                            expectedTok = candTok; // found a token!! exit and
-                            opCode = 0;
-                            tokIdx = it.previousIndex();
-                            if(tokIdx == winOrgSz){
-
-                                GramSymbol<U> candGramSym_ = new GramSymbol<>(false, null);
-                                candGramSym_.setSymbolToken(candTok);
-
-                                window.add(new Pair<>(null, candGramSym_));
-
-                                winOrgSz++;
-                                currIdx++;
-                            }
-                            break outer_;
-                        }else{
-                            continue outer;
-                        }
-                    }
-                }
-
-                // try insertion
-                if(expectedTok == null){
-                    System.out.println("trying for insertion");
-outerinsert_:
-                    for(U candTok: this.tokSet){
-                        if(candTok.getName().equals("EOF")){continue;}
-                        GramSymbol<U> candGramSym = new GramSymbol<>(false, null);
-                        candGramSym.setSymbolToken(candTok);
-
-                        ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
-                        System.out.println("Size of window before insert: " + String.valueOf(window.size())+ " and the candTok is: " + candTok.toString());
-
-outerinsert:
-                        while(it.hasNext()){
-                            GramSymbol<U> nowSym = it.next().second();
-
-
-                            if(it.previousIndex() > winOrgSz){
-                                continue outerinsert_;
-                            }
-
-                            Integer insertIdx = it.previousIndex();
-                            it.add(new Pair<>(null, candGramSym)); // edit the window by inserting the candTok
-
-                            System.out.println("prospective tok list is: ");
-                            if(it.previousIndex() == 4){
-                                for(Pair<T, GramSymbol<U>> p: window){
-                                    System.out.println(p.second().getSymbolToken().toString());
-                                }
-                            }
-
-                            System.out.println("Size of window after inserting a candTok: " + window.size() + " and at index: " + insertIdx);
-
-                            // now after subbing the gramSym with candGramSym
-                            // we try to see if the cpy_oldSymStack can go beyond the
-                            // currIdx upto 4 tokens.
-                            Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
-                            Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-
-                            // this loop is over the (edited) sequence of tokens over the "window"
-                            int currIdx_ = 0;
-                            while(currIdx_ < window.size()){
-                                Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
-                            //for(Pair<T, GramSymbol<U>> nextSym_: window){
-                                GramSymbol<U> nextSym = nextSym_.second();
-
-                                LR1State<T,U> st = cpy_oldStateStack.peek();
-                                Action<T, U> ac = st.getAction(nextSym);
-
-                                if(ac == null){
-                                    it.previous(); it.remove(); // restore window
-                                    continue outerinsert;
-                                }
-                                if (ac instanceof Action.Shift<?,?> shAction) {
-                                    currIdx_++;
-                                    LR1State<T,U> state = (LR1State<T, U>) shAction.state();
-                                    // use state
-                                    cpy_oldStateStack.push(state);
-                                    cpy_oldSymStack.push(new Pair<>(null, nextSym));
-
-                                } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                    GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
-
-                                    // use prod
-                                    for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                        cpy_oldSymStack.pop();
-                                        cpy_oldStateStack.pop();
-                                    }
-
-                                    // warning: here assuming gotoAct will always shift
-                                    Action.Shift<T, U> gotoAct = (Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
-                                    cpy_oldStateStack.push(gotoAct.state());
-                                    cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                                } else if (ac instanceof Action.Accept<?,?> acAction) {
-                                    //System.out.println("here in the accepted branch in insert for tok: " + candTok.toString() + " tokIdx: " + insertIdx);
-                                    // accept
-                                    //expectedTok = candTok; // found a token!! exit and
-                                    //opCode = 1;
-                                    //tokIdx = insertIdx;
-                                    // no need to try insert and del
-                                    //it.previous(); it.remove(); // restore the window by deleting the tok
-                                    //continue outerinsert;
-                                    break;
-                                }
-                            }
-                            it.previous(); it.remove(); // restore the window by deleting the tok
-                            if(currIdx_ >= window.size() - 1){
-
-                                System.out.println("Found a candTok by insertion and it is: " + candTok.toString());
-
-                                // if we came here then we found a candTok
-                                expectedTok = candTok; // found a token!! exit and
-                                opCode = 1;
-                                tokIdx = insertIdx+1;
-
-                                break outerinsert_;
-                            }else{
-                                continue outerinsert;
-                            }
-                        }
-                    }
-                }
-
-                // try deletion
-                if(expectedTok == null){
-                        System.out.println("WE TRIED DELETING ASW!!!!!!");
-                        ListIterator<Pair<T, GramSymbol<U>>> it = window.listIterator();
-outerdel:
-                    while(it.hasNext()){
-                        Pair<T, GramSymbol<U>> nowSym = it.next();
-                        Integer delIdx = it.previousIndex();
-
-                        if(delIdx > winOrgSz){
-                            break outerdel;
-                        }
-
-                        it.remove(); // edit the window by removing a tok
-                                     // we try to see if the cpy_oldSymStack can go beyond the
-                                     // currIdx upto 4 tokens.
-                        Deque<LR1State<T,U>> cpy_oldStateStack = new ArrayDeque<>(oldStateStack);
-                        Deque<Pair<T, GramSymbol<U>>> cpy_oldSymStack = new ArrayDeque<>(oldSymStack);
-
-                        int currIdx_ = 0;
-
-                        while(currIdx_ < window.size()){
-                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
-                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
-                            GramSymbol<U> nextSym = nextSym_.second();
-
-                            LR1State<T,U> st = cpy_oldStateStack.peek();
-                            Action<T, U> ac = st.getAction(nextSym);
-
-                            if(ac == null){
-                                it.add(nowSym); // restore window
-                                continue outerdel;
-                            }
-
-                            if (ac instanceof Action.Shift<?,?> shAction) {
-                                currIdx_++;
-                                LR1State<T, U> state = (LR1State<T, U>) shAction.state();
-                                // use state
-                                cpy_oldStateStack.push(state);
-                                cpy_oldSymStack.push(new Pair<>(null, nextSym));
-
-                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
-                                // use prod
-                                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                    cpy_oldSymStack.pop();
-                                    cpy_oldStateStack.pop();
-                                }
-                                // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) cpy_oldStateStack.peek().getAction(prod.getLhs());
-                                cpy_oldStateStack.push(gotoAct.state());
-                                cpy_oldSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                            } else if (ac instanceof Action.Accept<?,?> acAction) {
-                                // accept
-                                //expectedTok = null; // no token in case of del
-                                //opCode = 2;
-                                //tokIdx = delIdx;
-                                // no need to try insert and del
-                                break;
-                            }
-                        }
-
-                        // if we came here then we found a candTok
-                        if(currIdx_ >= window.size() - 1){
-                            it.add(nowSym); // restore the window by adding the deleted tok
-                            expectedTok = null; // found a token!! exit and
-                            opCode = 2;
-                            tokIdx = delIdx;
-                            break outerdel;
-                        }else{
-                            it.add(nowSym); // restore the window by adding the deleted tok
-                            continue outerdel;
-                        }
-                    }
-                }
-
-                System.out.println("Came out of the rec loop with value opCode: " + String.valueOf(opCode));
-
-                while(window.size() > winOrgSz){
-                    window.removeLast();
-                }
-                // bringing back the size of window to its normal size
-                //for(int i = 0; i <= Math.min(R, this.tokens.size()-currIdx-1); i++){
-                //    window.removeLast();
-                //}
-
-                switch(opCode){
-                    case 0: {
-                        System.out.println("************************************was here in the opCode=0 branch with expected tok: " + expectedTok.toString());
-                        //currIdx++;
-
-                        GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
-                        gramSym_.setSymbolToken(expectedTok);
-
-
-                        if(tokIdx == window.size()){
-                            this.tokens.set(currIdx, expectedTok);
-                        }else{
-                            window.set(tokIdx, new Pair<>(null, gramSym_));
-                        }
-
-                        for(Pair<T, GramSymbol<U>> p: window){
-                            System.out.println(p.second().getSymbolToken().toString());
-                        }
-
-                        currStateStack = new ArrayDeque<>(oldStateStack);
-                        currSymStack = new ArrayDeque<>(oldSymStack);
-
-                        int currIdx_ = 0;
-                        while(currIdx_ < window.size()){
-                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
-                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
-                            GramSymbol<U> nextSym = nextSym_.second();
-
-                            LR1State<T,U> st = currStateStack.peek();
-                            Action<T, U> ac = st.getAction(nextSym);
-
-                            if(ac == null){
-                                // we shouldn't get here
-                            }
-
-                            if (ac instanceof Action.Shift<?,?> shAction) {
-                                currIdx_++;
-                                LR1State<T,U> state = (LR1State<T, U>) shAction.state();
-                                // use state
-                                currStateStack.push(state);
-                                currSymStack.push(new Pair<>(null, nextSym));
-
-                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
-                                // use prod
-                                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                    currSymStack.pop();
-                                    currStateStack.pop();
-                                }
-                                // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
-                                currStateStack.push(gotoAct.state());
-                                currSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                            } else if (ac instanceof Action.Accept<?,?> acAction) {
-                                // accept
-                                currAccepted = true;
-                                break;
-                            }
-                        }
-                        ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                tok.getColNo(),
-                                expectedTok,
-                                tok);
-                        errList.add(errParse);
-                        continue;
-                    }
-                    case 1: {
-                        System.out.println("-----------------------------------------was here in opcode value 1");
-                        //currIdx++;
-
-                        GramSymbol<U> gramSym_ = new GramSymbol<>(false, null);
-                        gramSym_.setSymbolToken(expectedTok);
-
-                        System.out.println("Size of window before adding tok: " + String.valueOf(window.size()) + " and at tokIdx: " + String.valueOf(tokIdx));
-
-                        window.add(tokIdx, new Pair<>(null, gramSym_));
-
-                        System.out.println("Size of window after adding tok: " + String.valueOf(window.size()) + " and the tok is: " + expectedTok.toString());
-                        for(Pair<T, GramSymbol<U>> p: window){
-                            System.out.println(p.second().getSymbolToken().toString());
-                        }
-
-                        currStateStack = new ArrayDeque<>(oldStateStack);
-                        currSymStack = new ArrayDeque<>(oldSymStack);
-
-                        int currIdx_ = 0;
-                        while(currIdx_ < window.size()){
-                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
-                            Pair<T, GramSymbol<U>> nextSym_ = window.get(currIdx_);
-                            GramSymbol<U> nextSym = nextSym_.second();
-
-                            LR1State<T,U> st = currStateStack.peek();
-                            Action<T, U> ac = st.getAction(nextSym);
-
-                            if(ac == null){
-                                // we shouldn't get here
-                            }
-
-                            if (ac instanceof Action.Shift<?,?> shAction) {
-                                currIdx_++;
-                                LR1State<T,U> state = (LR1State<T,U>) shAction.state();
-                                // use state
-                                currStateStack.push(state);
-                                currSymStack.push(new Pair<>(null, nextSym));
-
-                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                GramProd<T, U> prod =(GramProd<T, U>) reAction.prod();
-                                // use prod
-                                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                    currSymStack.pop();
-                                    currStateStack.pop();
-                                }
-                                // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
-                                currStateStack.push(gotoAct.state());
-                                currSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                            } else if (ac instanceof Action.Accept<?,?> acAction) {
-                                // accept
-                                currAccepted = true;
-                                break;
-                            }
-                        }
-                        System.out.println("consumed the edited window by currStateStacka nd currSymStack");
-                        ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                tok.getColNo(),
-                                expectedTok,
-                                tok);
-                        errList.add(errParse);
-                        continue;
-                    }
-                    case 2: {
-                        //currIdx++;
-                        for(Pair<T, GramSymbol<U>> p: window){
-                            System.out.println(p.second().getSymbolToken().toString());
-                        }
-                        System.out.println("opCode=2 we were here in the delete branch tokIdx: " + String.valueOf(tokIdx));
-                        window.remove(tokIdx.intValue());
-
-                        for(Pair<T, GramSymbol<U>> p: window){
-                            System.out.println(p.second().getSymbolToken().toString());
-                        }
-
-                        currStateStack = new ArrayDeque<>(oldStateStack);
-                        currSymStack = new ArrayDeque<>(oldSymStack);
-
-                        int currIdx_ = 0;
-
-                        //for(Pair<T, GramSymbol<U>> nextSym_: window){
-                        while(currIdx_ < window.size()){
-                            Pair<T, GramSymbol<U>> nextSym_= window.get(currIdx_);
-                            GramSymbol<U> nextSym = nextSym_.second();
-
-                            LR1State<T,U> st = currStateStack.peek();
-                            Action ac = st.getAction(nextSym);
-
-                            if(ac == null){
-                                // we shouldn't get here
-                            }
-
-                            if (ac instanceof Action.Shift<?, ?> shAction) {
-                                currIdx_++;
-
-                                LR1State<T,U> state = (LR1State<T, U>)shAction.state();
-                                // use state
-                                currStateStack.push(state);
-                                currSymStack.push(new Pair<>(null, nextSym));
-
-                            } else if (ac instanceof Action.Reduce<?,?> reAction) {
-                                GramProd<T, U> prod = (GramProd<T, U>) reAction.prod();
-                                // use prod
-                                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                                    currSymStack.pop();
-                                    currStateStack.pop();
-                                }
-                                // warning: here assuming gotoAct will always shift
-                                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
-                                currStateStack.push(gotoAct.state());
-                                currSymStack.push(new Pair<>(null, prod.getLhs()));
-
-                            } else if (ac instanceof Action.Accept<?, ?> acAction) {
-                                // accept
-                                currAccepted = true;
-                                break;
-                            }
-                        }
-                        ParseErr<U> errParse  = new ParseErr<>(tok.getLineNo(),
-                                tok.getColNo(),
-                                expectedTok,
-                                tok);
-                        errList.add(errParse);
-                        continue;
-                    }
+                ParseErr<U> errParse_  = new ParseErr<>(tok.getLineNo(),
+                            tok.getColNo(),
+                            null,
+                            tok);
+                errList.add(errParse_);
+                // panic-mode rec
+                Pair<Integer, Action<T, U>> newPos = this.panicRec(currIdx.intValue(), currStateStack /*passed by ref*/, currSymStack /*passed by ref*/);
+
+                Integer newCurrIdx = newPos.first();
+                Action<T, U> newAction = newPos.second();
+                if(newAction == null){
+                    U errTok = this.tokens.get(currIdx);
+                    ParseErr<U> errParse  = new ParseErr<>(errTok.getLineNo(),
+                                errTok.getColNo(),
+                                null,
+                                errTok);
+                    errList.add(errParse);
+                    break;
+                }else{
+                    currIdx = newCurrIdx;
+                    action = newAction;
                 }
             }
 
@@ -898,85 +455,15 @@ outerdel:
                 currSymStack.push(new Pair<>(null, gramSym));
                 currIdx++;
 
-                // push it into the window
-                window.addLast(new Pair<>(null, gramSym));
-
             } else if (action instanceof Action.Reduce<?,?> reduce) {
+
                 GramProd<T, U> prod = (GramProd<T, U>) reduce.prod();
-                // use prod
-                for(GramSymbol<U> rhsSym: prod.getRhs()){
-                    currSymStack.pop();
-                    currStateStack.pop();
-                }
-                // warning: here assuming gotoAct will always shift
-                Action.Shift<T, U> gotoAct =(Action.Shift<T, U>) currStateStack.peek().getAction(prod.getLhs());
-                currStateStack.push(gotoAct.state());
-                currSymStack.push(new Pair<>(null, prod.getLhs()));
+                prod.getSupp().apply(prod, currStateStack, currSymStack);
 
             } else if (action instanceof Action.Accept<?,?> accept) {
 
-                // push it into the window
-                window.addLast(new Pair<>(null, gramSym));
-                // accept
+                astFull = currSymStack.peek().first(); // Prog. $
                 currAccepted = true;
-            }
-            // now we need to take a token out of the window in case its size is > `windowSz`
-            // and update the old statestack and symstack
-            // emit the AstNode from here for each reduction
-            if(window.size() > windowSz){
-                GramSymbol<U> gramSymFront = window.removeFirst().second();
-
-                Action<T, U> action_ = oldStateStack.peek().getAction(gramSymFront);
-
-                if (action_ instanceof Action.Shift<?, ?> shift_) {
-                    LR1State<T,U> state = (LR1State<T, U>) shift_.state();
-                    // use state
-                    oldStateStack.push(state);
-                    oldSymStack.push(new Pair<>(null, gramSymFront));
-
-                } else if (action_ instanceof Action.Reduce<?, ?> reduce_) {
-
-                    GramProd<T, U> prod = (GramProd<T, U>) reduce_.prod();
-                    prod.getSupp().apply(prod, oldStateStack, oldSymStack);
-                    window.addFirst(new Pair<>(null, gramSymFront)); // for shift we don't consume the token. so we add it back to window
-
-                } else if (action_ instanceof Action.Accept<?, ?> accept_) {
-                    // accept
-                    // should not come here ever.
-                    astFull = oldSymStack.peek().first(); // Prog. $
-                    oldAccepted = true;
-                }
-            }
-        }
-        // curr has accepted. we need to consume the tokens in the window.
-        if(currAccepted && astFull == null){
-            while(window.size() > 0){
-                //System.out.println("was in the final window consumption loop");
-                GramSymbol<U> gramSym = window.removeFirst().second();
-
-                Action<T, U> action_ = oldStateStack.peek().getAction(gramSym);
-
-                if (action_ instanceof Action.Shift<?,?> shift_) {
-                    LR1State<T,U> state = (LR1State<T,U>) shift_.state();
-                    // use state
-                    oldStateStack.push(state);
-                    oldSymStack.push(new Pair<>(null, gramSym));
-
-                } else if (action_ instanceof Action.Reduce<?,?> reduce_) {
-                    GramProd<T, U> prod = (GramProd<T, U>)reduce_.prod();
-
-                    ReduceAction<T, U> reducFunc = prod.getSupp();
-
-                    reducFunc.apply(prod, oldStateStack, oldSymStack);
-                    window.addFirst(new Pair<>(null, gramSym)); // for shift we don't consume the token. so we add it back to window
-
-                } else if (action_ instanceof Action.Accept<?,?> accept_) {
-                    // accept
-                    // should not come here ever.
-                    astFull = oldSymStack.peek().first(); // Prog. $
-                    oldAccepted = true;
-                    break;
-                }
             }
         }
 

@@ -12,76 +12,58 @@ public class AstNode{
         this.pos = pos;
     }
 
-    public void printNode() {
-        PrintContext ctx = new PrintContext();
-        ctx.print(this, 0);
+    private void printMargin(int margin){
+        System.out.printf(String.valueOf("-").repeat(margin));
     }
 
-    private static class PrintContext {
+    public void printNode(int indent){
+        this.printMargin(indent);
+        // there will be two kinds of field that every node will have
+        // (1) that extend (directly or indirectly) the AstNode class
+        // (2) those that do not
+        Class<?> clazz = this.getClass();
 
-        private final Map<Object, Integer> ids = new IdentityHashMap<>();
-        private final Set<Object> printed = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        private int nextId = 1;
+        String runTimeName = clazz.getName();
+        System.out.printf(" "+runTimeName+"\n");
 
-        private int getId(Object obj) {
-            return ids.computeIfAbsent(obj, k -> nextId++);
-        }
 
-        private void print(AstNode node, int indent) {
+        List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
+        // flatten by removing the List
+        List<Object> fieldObjs = new ArrayList<>();
+        List<AstNode> childNodes = new ArrayList<>();
 
-            int id = getId(node);
+        for (Field field : fields) {
+            field.setAccessible(true);
 
-            printIndent(indent);
-            System.out.println( node.getClass().getSimpleName() + "#" + id);
-            // Prevent infinite recursion for cyclic references.
-            if (!printed.add(node)) {
-                printIndent(indent + 1);
-                System.out.println("<already printed>");
-                return;
-            }
+            try{
+                Object value = field.get(this);
 
-            Class<?> clazz = node.getClass();
-
-            while (clazz != null && clazz != Object.class) {
-                 for (Field field : clazz.getDeclaredFields()) {
-
-                        if (Modifier.isStatic(field.getModifiers())) {
-                            continue;
+                if (value instanceof List<?> list) {
+                    for (Object element : list) {
+                        if(element instanceof AstNode node){
+                            childNodes.add(node);
+                        }else{
+                            fieldObjs.add(element);
                         }
-
-                        field.setAccessible(true);
-
-                        try {
-                            Object value = field.get(node);
-                            printIndent(indent + 1);
-                            System.out.print(field.getName() + " = ");
-
-                            if (value == null) {
-                                System.out.println("null");
-
-                            } else if (value instanceof AstNode child) {
-
-                                int childId = getId(child);
-
-                                System.out.println(child.getClass().getSimpleName() + "#" + childId);
-                                print(child, indent + 2);
-
-                            } else {
-                                System.out.println(value.getClass().getSimpleName() + "#" + getId(value) + " = " + value);
-                            }
-
-                        } catch (IllegalAccessException e) {
-                            printIndent(indent + 1);
-                            System.out.println(field.getName() + " = < inaccessible >");
-                        }
-                     }
-
-                     clazz = clazz.getSuperclass();
+                    }
+                }else{
+                    if(value instanceof AstNode node){
+                        childNodes.add(node);
+                    }else{
+                        fieldObjs.add(value);
+                    }
                 }
-        }
 
-        private void printIndent(int count) {
-            System.out.print("    ".repeat(count));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        for(Object obj: fieldObjs){
+            this.printMargin(indent+2);
+            System.out.printf(" "+obj.getClass().getName()+"\n");
+        }
+        for(AstNode node: childNodes){
+            node.printNode(indent+2);
         }
     }
 

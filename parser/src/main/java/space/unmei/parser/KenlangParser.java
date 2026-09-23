@@ -3,6 +3,7 @@ package space.unmei.parser;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.*;
 import space.unmei.lexer.LexToken;
 import space.unmei.semant.Symbol;
 
@@ -95,6 +96,15 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
             "RecordExpr",
             "ArrayExpr"
         };
+
+        Map<LexToken, Boolean> syncToks = new HashMap<>();
+
+        syncToks.put(new LexToken("EOF", "$"), true);
+        syncToks.put(new LexToken("SEMI_COLON", ";"), true);
+        syncToks.put(new LexToken("CLOSE_BRACE", "}"), true);
+        syncToks.put(new LexToken("CLOSE_SQUARE", "]"), true);
+        syncToks.put(new LexToken("CLOSE_PAREN", ")"), true);
+
 
         List<LexToken> termSyms = new ArrayList<>(
                 List.of(
@@ -2111,7 +2121,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
         GramSymbol<LexToken> extraEof = new GramSymbol<>(false, null);
         extraEof.setSymbolToken(new LexToken("EEOF", ""));
 
-        this.setup_(nonTermSyms, termSyms, prodStrs, extraEof);
+        this.setup_(nonTermSyms, termSyms, prodStrs, extraEof, syncToks);
         this.parserSetup = true;
     }
 

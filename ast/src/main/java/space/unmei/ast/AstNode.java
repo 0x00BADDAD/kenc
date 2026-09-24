@@ -50,6 +50,7 @@ public class AstNode{
                     if(value instanceof AstNode node){
                         childNodes.add(node);
                     }else{
+                        // this object could be null
                         fieldObjs.add(value);
                     }
                 }
@@ -60,7 +61,11 @@ public class AstNode{
         }
         for(Object obj: fieldObjs){
             this.printMargin(indent+2);
-            System.out.printf(" "+obj.getClass().getName()+"\n");
+            if(obj != null){
+                System.out.printf(" "+obj.getClass().getName()+"\n");
+            }else{
+                System.out.printf(" This field is null" + "\n");
+            }
         }
         for(AstNode node: childNodes){
             node.printNode(indent+2);

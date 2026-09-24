@@ -545,7 +545,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
 
                                 stateStack.pop(); symStack.pop(); // pop FUNC
 
-                                AstFunDec funDec = new AstFunDec(new Pos(funIdTok), new Symbol(funIdTok.getContent(), funIdTok), tyFieldsSym.first(), null);
+                                AstFunDec funDec = new AstFunDec(new Pos(funIdTok), new Symbol(funIdTok.getContent(), funIdTok), stmtsSym.first(), tyFieldsSym.first(), null);
 
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
 
@@ -580,7 +580,7 @@ public class KenlangParser extends LR1Parser<AstNode, LexToken>{
 
                                 stateStack.pop(); symStack.pop();
 
-                                AstFunDec funDec = new AstFunDec(new Pos(funIdTok), new Symbol(funIdTok.getContent(), funIdTok), tyFieldsSym.first(), tyVal.first());
+                                AstFunDec funDec = new AstFunDec(new Pos(funIdTok), new Symbol(funIdTok.getContent(), funIdTok), stmtsSym.first(), tyFieldsSym.first(), tyVal.first());
 
                                 Action.Shift gotoAct = (Action.Shift) stateStack.peek().getAction(prod.getLhs());
                                 stateStack.push(gotoAct.state());
